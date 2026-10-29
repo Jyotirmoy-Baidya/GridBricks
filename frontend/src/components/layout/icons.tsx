@@ -35,6 +35,12 @@ export const DayAheadIcon = () => (
     <path d="M3 10h18M8 3v4M16 3v4" />
   </Icon>
 )
+export const LiveIcon = () => (
+  <Icon>
+    <circle cx="12" cy="12" r="2" />
+    <path d="M7.8 7.8a6 6 0 0 0 0 8.4M16.2 7.8a6 6 0 0 1 0 8.4M4.9 4.9a10 10 0 0 0 0 14.2M19.1 4.9a10 10 0 0 1 0 14.2" />
+  </Icon>
+)
 export const MethodIcon = () => (
   <Icon>
     <path d="M4 4h10a4 4 0 0 1 4 4v12H8a4 4 0 0 1-4-4z" />

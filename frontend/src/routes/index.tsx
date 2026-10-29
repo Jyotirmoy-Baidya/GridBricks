@@ -41,6 +41,7 @@ export const router = createBrowserRouter([
             ],
           },
           { path: 'day-ahead/:date?', element: page(() => import('@/pages/day-ahead/DayAheadPage')), handle: h('Day-ahead planner', ['Day-ahead'], ['cutoff']) },
+          { path: 'live', element: page(() => import('@/pages/live/LivePage')), handle: h('Live forecast', ['Live'], []) },
           { path: 'methodology', element: page(() => import('@/pages/methodology/MethodologyPage')), handle: h('Methodology', ['Methodology'], []) },
         ],
       },

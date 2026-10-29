@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { addDays, diffDays, formatInt, formatLondon, formatPct, formatSigned } from './format'
+import { addDays, diffDays, formatDate, formatInt, formatLondon, formatPct, formatSigned } from './format'
 
 describe('format', () => {
   it('formats numbers and handles null', () => {
@@ -13,6 +13,10 @@ describe('format', () => {
   it('does date arithmetic in UTC', () => {
     expect(addDays('2026-01-31', 1)).toBe('2026-02-01')
     expect(diffDays('2026-01-01', '2026-01-31')).toBe(30)
+  })
+
+  it('formats a plain date without shifting it', () => {
+    expect(formatDate('2026-10-30')).toBe('Fri 30 Oct')
   })
 
   it('shows Europe/London local time', () => {

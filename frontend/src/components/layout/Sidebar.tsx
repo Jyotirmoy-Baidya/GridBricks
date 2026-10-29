@@ -2,13 +2,14 @@ import type { ReactNode } from 'react'
 import { NavLink, useLocation } from 'react-router-dom'
 import { useUiStore } from '@/store/useUiStore'
 import DataCoverageBadge from './DataCoverageBadge'
-import { AccuracyIcon, ChevronIcon, DayAheadIcon, ForecastIcon, MethodIcon, OverviewIcon, TurbineIcon } from './icons'
+import { AccuracyIcon, ChevronIcon, DayAheadIcon, ForecastIcon, LiveIcon, MethodIcon, OverviewIcon, TurbineIcon } from './icons'
 
 const links: { to: string; label: string; icon: ReactNode; end?: boolean }[] = [
   { to: '/dashboard', label: 'Overview', icon: <OverviewIcon />, end: true },
   { to: '/dashboard/forecasts', label: 'Forecasts', icon: <ForecastIcon /> },
   { to: '/dashboard/accuracy', label: 'Accuracy', icon: <AccuracyIcon /> },
   { to: '/dashboard/day-ahead', label: 'Day-ahead', icon: <DayAheadIcon /> },
+  { to: '/dashboard/live', label: 'Live', icon: <LiveIcon /> },
   { to: '/dashboard/methodology', label: 'Methodology', icon: <MethodIcon /> },
 ]
 

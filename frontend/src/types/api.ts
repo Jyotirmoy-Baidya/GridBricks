@@ -107,3 +107,12 @@ export interface DayAheadParams {
   date: string
   cutoff: string
 }
+
+export interface LiveResponse {
+  delivery_date: string
+  as_of: string | null
+  fetched_at: string
+  forecast_gwh: number | null
+  count_on_gwh: number | null
+  hours: DayAheadHour[]
+}

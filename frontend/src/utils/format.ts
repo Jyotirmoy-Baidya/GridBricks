@@ -26,6 +26,9 @@ export const formatGw = (mw: number) => `${(mw / 1000).toFixed(0)} GW`
 export const formatLondon = (iso: string | number, fmt = 'D MMM HH:mm') =>
   dayjs(iso).tz(TZ).format(fmt)
 
+/** Format a plain calendar date (YYYY-MM-DD) without any time-zone shifting. */
+export const formatDate = (date: string, fmt = 'ddd D MMM') => dayjs.utc(date).format(fmt)
+
 export const addDays = (date: string, n: number) => dayjs.utc(date).add(n, 'day').format('YYYY-MM-DD')
 
 export const diffDays = (from: string, to: string) => dayjs.utc(to).diff(dayjs.utc(from), 'day')

@@ -4,6 +4,7 @@ import BandChart from '@/components/charts/BandChart'
 import ChartLegend from '@/components/charts/ChartLegend'
 import Card from '@/components/common/Card'
 import ResourceView from '@/components/common/ResourceView'
+import HourTable from '@/components/tables/HourTable'
 import KpiRow from '@/components/kpi/KpiRow'
 import KpiTile from '@/components/kpi/KpiTile'
 import ChartSkeleton from '@/components/skeletons/ChartSkeleton'
@@ -13,10 +14,9 @@ import { useDayAheadStore } from '@/store/useDayAheadStore'
 import { useFilterStore } from '@/store/useFilterStore'
 import type { DayAheadResponse } from '@/types/api'
 import { DEFAULT_DELIVERY, DELIVERY_MAX, DELIVERY_MIN } from '@/utils/constants'
-import { addDays, formatInt, formatLondon } from '@/utils/format'
+import { addDays, formatLondon } from '@/utils/format'
 import { COLORS } from '@/utils/theme'
 
-const TH = 'sticky top-0 bg-slate-50 px-2.5 py-2 text-right text-xs font-semibold uppercase tracking-wider text-slate-600'
 const DATE_RE = /^\d{4}-\d{2}-\d{2}$/
 
 function DayKpis({ d }: { d: DayAheadResponse }) {
@@ -38,35 +38,6 @@ function DayKpis({ d }: { d: DayAheadResponse }) {
         </div>
       )}
     </>
-  )
-}
-
-function HourTable({ d }: { d: DayAheadResponse }) {
-  return (
-    <div className="max-h-[400px] overflow-auto rounded-md border border-slate-100">
-      <table className="w-full min-w-[680px] border-collapse text-[13.5px] tabular-nums">
-        <thead>
-          <tr>
-            <th className={`${TH} text-left`}>Hour (London)</th>
-            {['Published', 'Horizon', 'Forecast', 'P10', 'P90', 'Count-on', 'Actual'].map((h) => <th key={h} className={TH}>{h}</th>)}
-          </tr>
-        </thead>
-        <tbody>
-          {d.hours.map((h) => (
-            <tr key={h.t} className="text-right">
-              <td className="border-b border-slate-100 px-2.5 py-1.5 text-left font-mono text-[12.5px]">{formatLondon(h.t, 'HH:mm')}</td>
-              <td className="border-b border-slate-100 px-2.5 py-1.5 text-slate-600">{h.publish_time ? formatLondon(h.publish_time, 'D MMM HH:mm') : '–'}</td>
-              <td className="border-b border-slate-100 px-2.5 py-1.5 text-slate-600">{h.horizon_h} h</td>
-              <td className="border-b border-slate-100 px-2.5 py-1.5 font-semibold text-fc">{formatInt(h.forecast)}</td>
-              <td className="border-b border-slate-100 px-2.5 py-1.5">{formatInt(h.p10)}</td>
-              <td className="border-b border-slate-100 px-2.5 py-1.5">{formatInt(h.p90)}</td>
-              <td className="border-b border-slate-100 px-2.5 py-1.5 font-semibold">{formatInt(h.count_on)}</td>
-              <td className="border-b border-slate-100 px-2.5 py-1.5 text-wind">{formatInt(h.actual)}</td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
-    </div>
   )
 }
 
@@ -122,7 +93,7 @@ export default function DayAheadPage() {
 
       <Card title="Hour by hour" footer="Values in MW. Horizon grows through the day because one forecast covers all 24 hours.">
         <ResourceView res={store} skeleton={<TableSkeleton rows={8} />} onRetry={() => void load({ date, cutoff }, true)}>
-          {(d) => <HourTable d={d} />}
+          {(d) => <HourTable hours={d.hours} />}
         </ResourceView>
       </Card>
     </>
