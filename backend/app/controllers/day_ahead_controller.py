@@ -16,10 +16,10 @@ async def day_ahead(
     cov = await meta_repo.get_coverage(db)
     if "actual_min" not in cov:
         raise ApiError(503, "no data loaded yet")
-    ref_start, ref_end = int(cov["actual_min"]), int(cov["actual_max"]) + 1
+    history_start, history_end = int(cov["actual_min"]), int(cov["actual_max"]) + 1
 
     async def compute() -> DayAheadResponse:
-        return await day_ahead_service.build(db, delivery, cutoff_hhmm, ref_start, ref_end)
+        return await day_ahead_service.build(db, delivery, cutoff_hhmm, history_start, history_end)
 
     params = {"d": delivery.isoformat(), "c": cutoff_hhmm}
     return await cache_service.get_or_compute(

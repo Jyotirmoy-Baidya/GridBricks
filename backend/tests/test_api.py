@@ -66,6 +66,8 @@ async def test_day_ahead_band_and_count_on(client):
     assert h0["forecast"] == 1200 and h0["actual"] == 1000
     # constant +200 error, so the band and count-on collapse onto the actual
     assert h0["p10"] == h0["p90"] == h0["count_on"] == 1000
+    assert body["bands_basis"] == "all_history"  # only one day loaded, so nothing earlier to learn from
+    assert h0["adjusted"] == 1000  # the +200 offset removed gives back the actual
     assert body["actual_gwh"] == round(sum(1000 + 10 * i for i in range(24)) / 1000, 2)
 
 

@@ -4,6 +4,7 @@ from fastapi import APIRouter, Query
 
 from app.api.deps import DbDep, HorizonQuery, RangeDep, RedisDep, SettingsDep
 from app.controllers import metrics_controller as ctl
+from app.schemas.calibration import CalibrationResponse
 from app.schemas.metrics import (
     ByHorizonResponse,
     ByHourResponse,
@@ -49,3 +50,18 @@ async def distribution(
     bins: Annotated[int, Query(ge=5, le=60)] = 20,
 ) -> DistributionResponse:
     return await ctl.distribution(db, redis, settings, rng, horizon_h, bins)
+
+
+@router.get("/calibration", response_model=CalibrationResponse)
+async def calibration(
+    db: DbDep,
+    redis: RedisDep,
+    settings: SettingsDep,
+    rng: RangeDep,
+    horizon_h: HorizonQuery = 4.0,
+    train_days: Annotated[
+        int | None, Query(ge=7, le=365, description="Days before the range to learn from")
+    ] = 30,
+) -> CalibrationResponse:
+    """Out-of-sample check of the P10-P90 range, count-on line and bias adjustment."""
+    return await ctl.calibration(db, redis, settings, rng, horizon_h, train_days)

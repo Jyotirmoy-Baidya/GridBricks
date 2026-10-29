@@ -3,6 +3,9 @@ from redis.asyncio import Redis
 
 from app.api.deps import TimeRange
 from app.core.config import Settings
+from app.core.exceptions import ApiError
+from app.repositories import meta_repo
+from app.schemas.calibration import CalibrationResponse
 from app.schemas.metrics import (
     ByHorizonResponse,
     ByHourResponse,
@@ -10,7 +13,7 @@ from app.schemas.metrics import (
     HorizonMetrics,
     SummaryMetrics,
 )
-from app.services import cache_service, comparison_service, metrics_service
+from app.services import cache_service, calibration_service, comparison_service, metrics_service
 
 
 async def summary(
@@ -68,4 +71,28 @@ async def distribution(
     params = {"s": rng.start, "e": rng.end, "h": horizon_h, "b": bins}
     return await cache_service.get_or_compute(
         redis, "metrics-distribution", params, DistributionResponse, compute, settings.cache_ttl_s
+    )
+
+
+async def calibration(
+    db: asyncpg.Pool,
+    redis: Redis,
+    settings: Settings,
+    rng: TimeRange,
+    horizon_h: float,
+    train_days: int | None,
+) -> CalibrationResponse:
+    cov = await meta_repo.get_coverage(db)
+    if "actual_min" not in cov:
+        raise ApiError(503, "no data loaded yet")
+    history_start = int(cov["actual_min"])
+
+    async def compute() -> CalibrationResponse:
+        return await calibration_service.calibrate(
+            db, history_start, rng.start, rng.end, horizon_h, train_days
+        )
+
+    params = {"s": rng.start, "e": rng.end, "h": horizon_h, "hist": history_start, "td": train_days}
+    return await cache_service.get_or_compute(
+        redis, "metrics-calibration", params, CalibrationResponse, compute, settings.cache_ttl_s
     )

@@ -11,4 +11,5 @@ class LiveResponse(BaseModel):
     fetched_at: datetime
     forecast_gwh: float | None = None
     count_on_gwh: float | None = None
+    bands_basis: str | None = None
     hours: list[DayAheadHour]

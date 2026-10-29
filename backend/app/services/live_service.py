@@ -25,8 +25,9 @@ async def build(
 ) -> LiveResponse:
     """Tomorrow's hourly wind, using the newest forecast published up to now for each hour.
 
-    Nothing is stored: live rows never mix into the January dataset or its metrics. The
-    P10-P90 range and count-on line reuse the January error statistics (ref_range), when loaded.
+    Nothing is stored: live rows never mix into the loaded dataset or its metrics. The P10-P90
+    range and count-on line use the error statistics of the latest 30 days of loaded history
+    (ref_range is the loaded span), when available.
     """
     now_epoch = dt_to_epoch(now)
     delivery = now.astimezone(LONDON).date() + timedelta(days=1)
@@ -54,8 +55,10 @@ async def build(
         else:
             hours.append(DayAheadHour(t=from_epoch(t), horizon_h=(t - now_epoch) / HOUR))
 
+    basis = None
     if ref_range is not None:
-        await day_ahead_service.add_error_bands(db, hours, *ref_range)
+        ref_start, ref_end, basis = day_ahead_service.reference_window(*ref_range, now_epoch)
+        await day_ahead_service.add_error_bands(db, hours, ref_start, ref_end)
     forecast_gwh, count_on_gwh, _ = day_ahead_service.totals(hours)
     published = [h.publish_time for h in hours if h.publish_time is not None]
     return LiveResponse(
@@ -64,5 +67,6 @@ async def build(
         fetched_at=now,
         forecast_gwh=forecast_gwh,
         count_on_gwh=count_on_gwh,
+        bands_basis=basis,
         hours=hours,
     )
