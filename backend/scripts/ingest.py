@@ -15,7 +15,7 @@ async def main(start: date, end: date) -> None:
     redis = create_redis(settings)
     client = ElexonClient(settings.elexon_base_url)
     try:
-        coverage = await ingest(redis, client, start, end, settings.max_horizon_h)
+        coverage = await ingest(redis, client, start, end, settings.ingest_horizon_h)
         print(coverage)
     finally:
         await client.aclose()

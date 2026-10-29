@@ -18,7 +18,7 @@ async def main(start: date, end: date) -> None:
     client = ElexonClient(settings.elexon_base_url)
     try:
         actuals = clean_actuals(await client.fetch_actuals(start, end))
-        forecasts = clean_forecasts(await client.fetch_forecasts(start, end), settings.max_horizon_h)
+        forecasts = clean_forecasts(await client.fetch_forecasts(start, end), settings.ingest_horizon_h)
     finally:
         await client.aclose()
     write_seed(SEED_PATH, actuals, forecasts)
