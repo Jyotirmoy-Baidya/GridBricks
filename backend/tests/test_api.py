@@ -6,7 +6,6 @@ Forecast B: published 2 h before each target, actual - 50.
 So horizon 4 picks A (+200 error) and horizon 1 picks B (-50 error).
 """
 
-import fakeredis.aioredis
 import pytest
 from httpx import ASGITransport, AsyncClient
 
@@ -22,15 +21,15 @@ Q = "start=2026-01-10T00:00:00Z&end=2026-01-11T00:00:00Z"
 
 
 @pytest.fixture
-async def client(redis):
+async def client(db, redis):
     actuals = [(DAY + i * H, 1000 + 10 * i) for i in range(24)]
     forecasts = []
     for t, a in actuals:
         forecasts.append((t, PUB_A, a + 200))
         forecasts.append((t, t - 2 * H, a - 50))
-    await store_rows(redis, actuals, forecasts)
+    await store_rows(db, redis, actuals, forecasts)
     app = create_app()
-    app.state.redis = redis
+    app.state.db, app.state.redis = db, redis
     async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as c:
         yield c
 
@@ -99,12 +98,12 @@ async def test_admin_ingest_requires_token(client):
     assert r.status_code == 401
 
 
-async def test_rate_limit_returns_429(redis, monkeypatch):
+async def test_rate_limit_returns_429(db, redis, monkeypatch):
     monkeypatch.setenv("RATE_LIMIT_PER_MIN", "2")
     get_settings.cache_clear()
     try:
         app = create_app()
-        app.state.redis = redis
+        app.state.db, app.state.redis = db, redis
         async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as c:
             codes = [(await c.get("/api/v1/meta/coverage")).status_code for _ in range(3)]
             assert codes == [200, 200, 429]
@@ -112,6 +111,3 @@ async def test_rate_limit_returns_429(redis, monkeypatch):
     finally:
         get_settings.cache_clear()
 
-
-def test_fakeredis_import_is_available():
-    assert fakeredis.aioredis.FakeRedis
