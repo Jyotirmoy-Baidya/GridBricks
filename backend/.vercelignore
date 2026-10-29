@@ -1,0 +1,8 @@
+tests
+.venv
+.mypy_cache
+.pytest_cache
+*.egg-info
+Dockerfile
+heroku.yml
+app.json

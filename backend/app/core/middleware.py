@@ -32,6 +32,9 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
         now = int(time.time())
         window = now // 60
         ip = request.client.host if request.client else "unknown"
+        forwarded = request.headers.get("x-forwarded-for")
+        if forwarded and get_settings().trust_forwarded_for:
+            ip = forwarded.split(",")[0].strip()
         key = f"rl:{ip}:{window}"
         try:
             redis = request.app.state.redis

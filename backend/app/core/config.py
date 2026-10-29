@@ -16,6 +16,9 @@ class Settings(BaseSettings):
     cors_origins: str = "http://localhost:5173"
     admin_token: str = "change-me"
     rate_limit_per_min: int = 120
+    run_startup_init: bool = True  # False on serverless: tables and seed are loaded once by scripts.init_db
+    db_pool_max: int = 5
+    trust_forwarded_for: bool = False  # True behind a proxy that sets X-Forwarded-For (Vercel)
 
     @property
     def cors_origin_list(self) -> list[str]:

@@ -1,6 +1,6 @@
 import ssl
 from pathlib import Path
-from urllib.parse import urlparse
+from urllib.parse import parse_qsl, urlencode, urlparse, urlunparse
 
 import asyncpg
 from fastapi import Request
@@ -24,15 +24,36 @@ def _ssl_for(url: str) -> ssl.SSLContext | None:
     return ctx
 
 
+def clean_dsn(url: str) -> str:
+    """Drop URL options asyncpg cannot parse (Neon adds channel_binding=require)."""
+    parts = urlparse(url)
+    query = [(k, v) for k, v in parse_qsl(parts.query) if k != "channel_binding"]
+    return urlunparse(parts._replace(query=urlencode(query)))
+
+
+def uses_pooler(url: str) -> bool:
+    """Neon's -pooler host is PgBouncer in transaction mode: no prepared statements, no session locks."""
+    return "-pooler" in (urlparse(url).hostname or "")
+
+
+def direct_url(url: str) -> str:
+    """The same database through the direct (non-pooled) host, for schema setup and advisory locks."""
+    parts = urlparse(url)
+    host = (parts.hostname or "").replace("-pooler", "")
+    netloc = parts.netloc.replace(parts.hostname or "", host)
+    return urlunparse(parts._replace(netloc=netloc))
+
+
 async def create_pool(
     settings: Settings, server_settings: dict[str, str] | None = None
 ) -> asyncpg.Pool:
     # UTC session so date_trunc('hour', ...) lines up with settlement hours.
     return await asyncpg.create_pool(
-        settings.database_url,
+        clean_dsn(settings.database_url),
         min_size=1,
-        max_size=5,
+        max_size=settings.db_pool_max,
         ssl=_ssl_for(settings.database_url),
+        statement_cache_size=0 if uses_pooler(settings.database_url) else 100,
         server_settings={"timezone": "UTC", **(server_settings or {})},
     )
 

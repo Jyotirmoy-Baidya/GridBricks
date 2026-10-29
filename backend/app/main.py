@@ -23,11 +23,12 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
     settings = get_settings()
     app.state.redis = create_redis(settings)
     app.state.db = await create_pool(settings)  # Postgres is the system of record: fail loudly
-    await init_schema(app.state.db)
-    try:
-        await load_seed_if_empty(app.state.db, app.state.redis)
-    except (RedisError, asyncpg.PostgresError, OSError):
-        logger.exception("could not load the bundled seed data")
+    if settings.run_startup_init:
+        await init_schema(app.state.db)
+        try:
+            await load_seed_if_empty(app.state.db, app.state.redis)
+        except (RedisError, asyncpg.PostgresError, OSError):
+            logger.exception("could not load the bundled seed data")
     yield
     await app.state.db.close()
     await app.state.redis.aclose()
