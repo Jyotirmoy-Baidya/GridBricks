@@ -1,0 +1,30 @@
+import gzip
+import json
+from pathlib import Path
+
+from redis.asyncio import Redis
+
+from app.repositories import meta_repo
+from app.services.cleaning import ActualRow, ForecastRow
+from app.services.ingestion_service import store_rows
+
+SEED_PATH = Path(__file__).resolve().parents[2] / "data" / "seed.json.gz"
+
+
+def write_seed(path: Path, actuals: list[ActualRow], forecasts: list[ForecastRow]) -> None:
+    payload = {"actuals": actuals, "forecasts": forecasts}
+    path.parent.mkdir(parents=True, exist_ok=True)
+    with gzip.open(path, "wt", encoding="utf-8") as f:
+        json.dump(payload, f, separators=(",", ":"))
+
+
+async def load_seed_if_empty(redis: Redis, path: Path = SEED_PATH) -> bool:
+    """Load the bundled snapshot when Redis holds no data. Returns True if it loaded."""
+    if await meta_repo.get_coverage(redis) or not path.exists():
+        return False
+    with gzip.open(path, "rt", encoding="utf-8") as f:
+        payload = json.load(f)
+    actuals = [(int(t), int(mw)) for t, mw in payload["actuals"]]
+    forecasts = [(int(t), int(p), int(mw)) for t, p, mw in payload["forecasts"]]
+    await store_rows(redis, actuals, forecasts)
+    return True

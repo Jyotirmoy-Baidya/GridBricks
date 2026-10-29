@@ -13,7 +13,7 @@ ingest:
 	docker compose exec api python -m scripts.ingest --from 2025-12-30 --to 2026-02-01
 
 seed:
-	docker compose exec api python -m scripts.build_seed
+	cd backend && python -m scripts.build_seed
 
 test:
 	cd backend && python -m pytest -q
