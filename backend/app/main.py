@@ -8,6 +8,8 @@ from redis.exceptions import RedisError
 
 from app.api.v1.router import api_router
 from app.core.config import get_settings
+from app.core.exceptions import register_exception_handlers
+from app.core.middleware import RateLimitMiddleware, RequestContextMiddleware
 from app.core.redis import create_redis
 from app.services.seed_service import load_seed_if_empty
 
@@ -28,12 +30,16 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
 def create_app() -> FastAPI:
     settings = get_settings()
     app = FastAPI(title="Wind Forecast Monitor API", version="0.1.0", lifespan=lifespan)
+    app.add_middleware(RateLimitMiddleware)
+    app.add_middleware(RequestContextMiddleware)
     app.add_middleware(
         CORSMiddleware,
         allow_origins=settings.cors_origin_list,
         allow_methods=["GET", "POST"],
         allow_headers=["*"],
+        expose_headers=["X-Request-Id", "Retry-After"],
     )
+    register_exception_handlers(app)
     app.include_router(api_router)
     return app
 

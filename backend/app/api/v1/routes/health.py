@@ -1,15 +1,10 @@
-from typing import Annotated
+from fastapi import APIRouter
 
-from fastapi import APIRouter, Depends
-from redis.asyncio import Redis
-
+from app.api.deps import RedisDep
 from app.controllers.health_controller import get_health
-from app.core.redis import get_redis
 from app.schemas.health import HealthResponse
 
 router = APIRouter()
-
-RedisDep = Annotated[Redis, Depends(get_redis)]
 
 
 @router.get("/health", response_model=HealthResponse)
