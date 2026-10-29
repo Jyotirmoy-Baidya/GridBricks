@@ -2,6 +2,8 @@ import { Link, useLocation, useMatches } from 'react-router-dom'
 import CutoffPicker from '@/components/filters/CutoffPicker'
 import DateRangePicker from '@/components/filters/DateRangePicker'
 import HorizonSlider from '@/components/filters/HorizonSlider'
+import RangePresets from '@/components/filters/RangePresets'
+import ThemeToggle from './ThemeToggle'
 
 export interface RouteHandle {
   title: string
@@ -37,9 +39,15 @@ export default function Topbar() {
         <h1 className="font-display text-[22px] font-extrabold">{handle?.title ?? 'Wind Monitor'}</h1>
       </div>
       <div className="ml-auto flex flex-wrap items-center gap-x-5 gap-y-2">
-        {handle?.filters.includes('range') && <DateRangePicker />}
+        {handle?.filters.includes('range') && (
+          <>
+            <RangePresets />
+            <DateRangePicker />
+          </>
+        )}
         {handle?.filters.includes('horizon') && <HorizonSlider />}
         {handle?.filters.includes('cutoff') && <CutoffPicker />}
+        <ThemeToggle />
       </div>
     </header>
   )

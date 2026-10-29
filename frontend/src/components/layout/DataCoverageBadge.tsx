@@ -9,8 +9,8 @@ export default function DataCoverageBadge({ compact }: { compact?: boolean }) {
   const label = status === 'error' ? 'API unreachable' : ok ? 'Data loaded' : 'Checking data…'
 
   return (
-    <div className="flex flex-col gap-1 rounded-lg border border-slate-700 p-3 text-xs text-slate-400">
-      <div className="flex items-center gap-1.5 font-semibold text-slate-200">
+    <div className="flex flex-col gap-1 rounded-lg border border-onink-muted/30 p-3 text-xs text-onink-muted">
+      <div className="flex items-center gap-1.5 font-semibold text-onink">
         <span className={`h-2 w-2 shrink-0 rounded-full ${dot}`} />
         {!compact && label}
       </div>

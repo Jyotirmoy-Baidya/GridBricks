@@ -2,19 +2,20 @@ import { Bar, CartesianGrid, ComposedChart, Line, ReferenceLine, ResponsiveConta
 import type { HourOfDayMetrics } from '@/types/api'
 import { formatInt, formatSigned } from '@/utils/format'
 import { COLORS } from '@/utils/theme'
-import { AXIS_LINE, MARGIN, TICK, TOOLTIP_STYLE } from './chartStyle'
+import { MARGIN, tickStyle, useChartTheme } from './useChartTheme'
 
 export default function HourlyErrorChart({ rows, height = 300 }: { rows: HourOfDayMetrics[]; height?: number }) {
+  const th = useChartTheme()
   return (
     <div style={{ width: '100%', height, minWidth: 0 }} role="img" aria-label="Mean absolute error and bias by hour of day">
       <ResponsiveContainer>
         <ComposedChart data={rows} margin={MARGIN}>
-          <CartesianGrid stroke={COLORS.grid} vertical={false} />
-          <XAxis dataKey="hour" tick={TICK} axisLine={AXIS_LINE} tickLine={false} tickFormatter={(h: number) => `${String(h).padStart(2, '0')}:00`} interval={2} />
-          <YAxis tick={TICK} axisLine={false} tickLine={false} width={52} tickFormatter={(v: number) => `${(v / 1000).toFixed(1)}k`} />
-          <ReferenceLine y={0} stroke="#c4cfd4" />
+          <CartesianGrid stroke={th.grid} vertical={false} />
+          <XAxis dataKey="hour" tick={tickStyle(th)} axisLine={{ stroke: th.axis }} tickLine={false} tickFormatter={(h: number) => `${String(h).padStart(2, '0')}:00`} interval={2} />
+          <YAxis tick={tickStyle(th)} axisLine={false} tickLine={false} width={52} tickFormatter={(v: number) => `${(v / 1000).toFixed(1)}k`} />
+          <ReferenceLine y={0} stroke={th.axis} />
           <Tooltip
-            contentStyle={TOOLTIP_STYLE}
+            contentStyle={th.tooltip}
             labelFormatter={(h) => `${String(h).padStart(2, '0')}:00 London`}
             formatter={(v, name) => [name === 'Bias' ? `${formatSigned(Number(v))} MW` : `${formatInt(Number(v))} MW`, String(name)]}
           />

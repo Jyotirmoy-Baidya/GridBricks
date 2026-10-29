@@ -21,13 +21,13 @@ export default function Sidebar() {
   return (
     <nav
       aria-label="Main"
-      className={`flex shrink-0 flex-col gap-5 bg-ink p-3 text-slate-300 md:sticky md:top-0 md:h-screen md:p-4 ${collapsed ? 'md:w-[72px]' : 'md:w-56'}`}
+      className={`flex shrink-0 flex-col gap-5 bg-ink p-3 text-onink-muted md:sticky md:top-0 md:h-screen md:p-4 ${collapsed ? 'md:w-[72px]' : 'md:w-56'}`}
     >
       <div className="flex items-center gap-2.5 px-1">
         <TurbineIcon />
         <div className={collapsed ? 'md:hidden' : ''}>
-          <div className="font-display text-base font-extrabold text-white">Wind Monitor</div>
-          <div className="text-xs text-slate-400">GB day-ahead desk</div>
+          <div className="font-display text-base font-extrabold text-onink">Wind Monitor</div>
+          <div className="text-xs text-onink-muted">GB day-ahead desk</div>
         </div>
       </div>
 
@@ -39,7 +39,7 @@ export default function Sidebar() {
               end={l.end}
               title={l.label}
               className={({ isActive }) =>
-                `flex min-h-11 items-center gap-2.5 whitespace-nowrap rounded-md px-3 ${isActive ? 'bg-ink-2 font-semibold text-white' : 'hover:bg-white/5'}`
+                `flex min-h-11 items-center gap-2.5 whitespace-nowrap rounded-md px-3 ${isActive ? 'bg-ink-2 font-semibold text-onink' : 'hover:bg-onink/10'}`
               }
             >
               {l.icon}
@@ -55,7 +55,7 @@ export default function Sidebar() {
           type="button"
           onClick={toggle}
           aria-label={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}
-          className="flex min-h-10 items-center gap-2 rounded-md px-3 text-sm hover:bg-white/5"
+          className="flex min-h-10 items-center gap-2 rounded-md px-3 text-sm hover:bg-onink/10"
         >
           <ChevronIcon flip={collapsed} />
           {!collapsed && 'Collapse'}

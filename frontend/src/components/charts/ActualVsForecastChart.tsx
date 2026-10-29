@@ -3,7 +3,7 @@ import { CartesianGrid, Line, LineChart, ResponsiveContainer, Tooltip, XAxis, YA
 import type { ComparisonPoint } from '@/types/api'
 import { formatInt, formatLondon } from '@/utils/format'
 import { COLORS } from '@/utils/theme'
-import { AXIS_LINE, MARGIN, TICK, TOOLTIP_STYLE } from './chartStyle'
+import { MARGIN, tickStyle, useChartTheme } from './useChartTheme'
 
 interface Props {
   points: ComparisonPoint[]
@@ -13,6 +13,7 @@ interface Props {
 const DAY_MS = 86_400_000
 
 export default function ActualVsForecastChart({ points, height = 320 }: Props) {
+  const th = useChartTheme()
   const data = useMemo(
     () => points.map((p) => ({ t: Date.parse(p.t), actual: p.actual, forecast: p.forecast })),
     [points],
@@ -24,11 +25,11 @@ export default function ActualVsForecastChart({ points, height = 320 }: Props) {
     <div style={{ width: '100%', height, minWidth: 0 }} role="img" aria-label="Line chart of actual and forecast wind generation">
       <ResponsiveContainer>
         <LineChart data={data} margin={MARGIN}>
-          <CartesianGrid stroke={COLORS.grid} vertical={false} />
-          <XAxis dataKey="t" type="number" scale="time" domain={['dataMin', 'dataMax']} tick={TICK} axisLine={AXIS_LINE} tickLine={false} tickFormatter={tickFmt} minTickGap={48} />
-          <YAxis tick={TICK} axisLine={false} tickLine={false} width={52} tickFormatter={(v: number) => `${v / 1000} GW`} />
+          <CartesianGrid stroke={th.grid} vertical={false} />
+          <XAxis dataKey="t" type="number" scale="time" domain={['dataMin', 'dataMax']} tick={tickStyle(th)} axisLine={{ stroke: th.axis }} tickLine={false} tickFormatter={tickFmt} minTickGap={48} />
+          <YAxis tick={tickStyle(th)} axisLine={false} tickLine={false} width={52} tickFormatter={(v: number) => `${v / 1000} GW`} />
           <Tooltip
-            contentStyle={TOOLTIP_STYLE}
+            contentStyle={th.tooltip}
             labelFormatter={(t) => formatLondon(Number(t), 'ddd D MMM HH:mm')}
             formatter={(v, name) => [`${formatInt(Number(v))} MW`, String(name)]}
           />
