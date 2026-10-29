@@ -2,7 +2,7 @@ export const DEFAULT_START = '2026-01-01'
 export const DEFAULT_END = '2026-01-31'
 export const DEFAULT_HORIZON = 4
 export const DEFAULT_CUTOFF = '09:00'
-export const DEFAULT_DELIVERY = '2026-01-15'
+export const DEFAULT_DELIVERY = '2026-02-01' // latest delivery day: the last January decision (31 Jan) is for 1 Feb
 
 export const RANGE_MIN = '2026-01-01'
 export const RANGE_MAX = '2026-01-31'
