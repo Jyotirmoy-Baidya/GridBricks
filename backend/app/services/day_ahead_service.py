@@ -21,51 +21,69 @@ async def _error_quantiles(
     return float(np.percentile(e, 10)), float(np.percentile(e, 90))
 
 
+async def add_error_bands(
+    db: Db, hours: list[DayAheadHour], ref_start: int, ref_end: int
+) -> None:
+    """Fill p10, p90 and count_on on every hour that has a forecast.
+
+    Bands come from how wrong forecasts at the same horizon were across the reference window
+    (all ingested data), so they are an in-sample guide. Actual = forecast - error.
+    """
+    quantiles: dict[int, tuple[float, float] | None] = {}
+    for hour in hours:
+        if hour.forecast is None:
+            continue
+        h_key = min(max(round(hour.horizon_h), 0), MAX_HORIZON_H)
+        if h_key not in quantiles:
+            quantiles[h_key] = await _error_quantiles(db, h_key, ref_start, ref_end)
+        q = quantiles[h_key]
+        if q is None:
+            continue
+        q10, q90 = q
+        hour.p10 = max(0, round(hour.forecast - q90))
+        hour.p90 = max(0, round(hour.forecast - q10))
+        hour.count_on = max(0, round(hour.forecast - max(0.0, q90)))
+
+
+def totals(hours: list[DayAheadHour]) -> tuple[float | None, float | None, float | None]:
+    """Daily GWh totals (forecast, count-on, actual); None unless all 24 hours have a value."""
+
+    def gwh(values: list[int | None]) -> float | None:
+        if not values or any(v is None for v in values):
+            return None
+        return round(sum(v for v in values if v is not None) / 1000, 2)
+
+    return (
+        gwh([h.forecast for h in hours]),
+        gwh([h.count_on for h in hours]),
+        gwh([h.actual for h in hours]),
+    )
+
+
 async def build(
     db: Db, delivery: date, cutoff_hhmm: str, ref_start: int, ref_end: int
 ) -> DayAheadResponse:
-    """Hourly plan for one London delivery day, using the forecast published before the D-1 cut-off.
-
-    The P10-P90 band and "count-on" line come from how wrong forecasts at the same horizon were
-    across the reference window (all ingested data), so they are an in-sample guide.
-    """
+    """Hourly plan for one London delivery day, using the forecast published before the D-1 cut-off."""
     start, end = london_day_bounds(delivery)
     cutoff = london_cutoff_epoch(delivery, cutoff_hhmm)
-    hours = list(range(start, end, HOUR))
     picks = await forecast_service.forecasts_at_cutoff(db, start, end, cutoff)
     actuals = await comparison_service.hourly_actuals(db, start, end)
 
-    quantiles: dict[int, tuple[float, float] | None] = {}
-    out: list[DayAheadHour] = []
-    for t in hours:
-        horizon = (t - cutoff) / HOUR
-        hour = DayAheadHour(t=from_epoch(t), horizon_h=horizon, actual=actuals.get(t))
+    hours: list[DayAheadHour] = []
+    for t in range(start, end, HOUR):
+        hour = DayAheadHour(t=from_epoch(t), horizon_h=(t - cutoff) / HOUR, actual=actuals.get(t))
         if t in picks:
             publish, f = picks[t]
             hour.forecast, hour.publish_time = f, from_epoch(publish)
-            h_key = min(max(round(horizon), 0), MAX_HORIZON_H)
-            if h_key not in quantiles:
-                quantiles[h_key] = await _error_quantiles(db, h_key, ref_start, ref_end)
-            q = quantiles[h_key]
-            if q is not None:
-                q10, q90 = q
-                hour.p10 = max(0, round(f - q90))  # actual = forecast - error
-                hour.p90 = max(0, round(f - q10))
-                hour.count_on = max(0, round(f - max(0.0, q90)))
-        out.append(hour)
+        hours.append(hour)
 
-    def gwh(values: list[int]) -> float:
-        return round(sum(values) / 1000, 2)
-
-    with_f = [h for h in out if h.forecast is not None]
-    complete = len(with_f) == len(out)
+    await add_error_bands(db, hours, ref_start, ref_end)
+    forecast_gwh, count_on_gwh, actual_gwh = totals(hours)
     return DayAheadResponse(
         delivery_date=delivery,
         cutoff=from_epoch(cutoff),
-        forecast_gwh=gwh([h.forecast for h in with_f if h.forecast is not None]) if complete else None,
-        count_on_gwh=gwh([h.count_on for h in with_f if h.count_on is not None]) if complete else None,
-        actual_gwh=gwh([h.actual for h in out if h.actual is not None])
-        if all(h.actual is not None for h in out)
-        else None,
-        hours=out,
+        forecast_gwh=forecast_gwh,
+        count_on_gwh=count_on_gwh,
+        actual_gwh=actual_gwh,
+        hours=hours,
     )
