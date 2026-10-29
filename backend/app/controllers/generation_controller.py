@@ -1,3 +1,6 @@
+from datetime import datetime
+
+import asyncpg
 from redis.asyncio import Redis
 
 from app.api.deps import TimeRange
@@ -15,17 +18,17 @@ from app.services import cache_service, comparison_service, forecast_service
 from app.utils.time import from_epoch
 
 
-async def coverage(redis: Redis) -> CoverageResponse:
-    c = await meta_repo.get_coverage(redis)
+async def coverage(db: asyncpg.Pool) -> CoverageResponse:
+    c = await meta_repo.get_coverage(db)
     if not c:
         return CoverageResponse(loaded=False)
 
-    def ts(key: str):  # type: ignore[no-untyped-def]
+    def ts(key: str) -> datetime | None:
         return from_epoch(int(c[key])) if key in c else None
 
     return CoverageResponse(
         loaded=True,
-        ingested_at=c.get("ingested_at"),  # type: ignore[arg-type]
+        ingested_at=datetime.fromisoformat(c["ingested_at"]) if "ingested_at" in c else None,
         actual_rows=int(c.get("actual_rows", 0)),
         forecast_rows=int(c.get("forecast_rows", 0)),
         actual_start=ts("actual_min"),
@@ -35,16 +38,16 @@ async def coverage(redis: Redis) -> CoverageResponse:
     )
 
 
-async def actuals(redis: Redis, rng: TimeRange) -> ActualsResponse:
-    rows = await actuals_repo.get_range(redis, rng.start, rng.end - 1)
+async def actuals(db: asyncpg.Pool, rng: TimeRange) -> ActualsResponse:
+    rows = await actuals_repo.get_range(db, rng.start, rng.end)
     return ActualsResponse(points=[ActualPoint(t=from_epoch(t), generation=mw) for t, mw in rows])
 
 
 async def forecasts(
-    redis: Redis, settings: Settings, rng: TimeRange, horizon_h: float
+    db: asyncpg.Pool, redis: Redis, settings: Settings, rng: TimeRange, horizon_h: float
 ) -> ForecastsResponse:
     async def compute() -> ForecastsResponse:
-        points = await forecast_service.selected_forecasts(redis, rng.start, rng.end, horizon_h)
+        points = await forecast_service.selected_forecasts(db, rng.start, rng.end, horizon_h)
         return ForecastsResponse(horizon_h=horizon_h, points=points)
 
     params = {"s": rng.start, "e": rng.end, "h": horizon_h}
@@ -54,10 +57,10 @@ async def forecasts(
 
 
 async def comparison(
-    redis: Redis, settings: Settings, rng: TimeRange, horizon_h: float
+    db: asyncpg.Pool, redis: Redis, settings: Settings, rng: TimeRange, horizon_h: float
 ) -> ComparisonResponse:
     async def compute() -> ComparisonResponse:
-        rows = await comparison_service.compare(redis, rng.start, rng.end, horizon_h)
+        rows = await comparison_service.compare(db, rng.start, rng.end, horizon_h)
         return ComparisonResponse(
             horizon_h=horizon_h,
             points=[

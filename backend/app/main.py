@@ -2,12 +2,14 @@ import logging
 from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
 
+import asyncpg
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from redis.exceptions import RedisError
 
 from app.api.v1.router import api_router
 from app.core.config import get_settings
+from app.core.db import create_pool, init_schema
 from app.core.exceptions import register_exception_handlers
 from app.core.middleware import RateLimitMiddleware, RequestContextMiddleware
 from app.core.redis import create_redis
@@ -18,12 +20,16 @@ logger = logging.getLogger(__name__)
 
 @asynccontextmanager
 async def lifespan(app: FastAPI) -> AsyncIterator[None]:
-    app.state.redis = create_redis(get_settings())
+    settings = get_settings()
+    app.state.redis = create_redis(settings)
+    app.state.db = await create_pool(settings)  # Postgres is the system of record: fail loudly
+    await init_schema(app.state.db)
     try:
-        await load_seed_if_empty(app.state.redis)
-    except (RedisError, OSError):
-        logger.warning("Redis unavailable at startup; /health will report degraded")
+        await load_seed_if_empty(app.state.db, app.state.redis)
+    except (RedisError, asyncpg.PostgresError, OSError):
+        logger.exception("could not load the bundled seed data")
     yield
+    await app.state.db.close()
     await app.state.redis.aclose()
 
 

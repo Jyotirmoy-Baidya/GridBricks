@@ -2,16 +2,19 @@ from dataclasses import dataclass
 from datetime import datetime
 from typing import Annotated
 
+import asyncpg
 from fastapi import Depends, Query
 from redis.asyncio import Redis
 
 from app.core.config import Settings, get_settings
+from app.core.db import get_db
 from app.core.exceptions import ApiError
 from app.core.redis import get_redis
 from app.utils.time import dt_to_epoch
 
 MAX_RANGE_DAYS = 45
 
+DbDep = Annotated[asyncpg.Pool, Depends(get_db)]
 RedisDep = Annotated[Redis, Depends(get_redis)]
 SettingsDep = Annotated[Settings, Depends(get_settings)]
 HorizonQuery = Annotated[float, Query(ge=0, le=48, description="Hours between publish and target")]

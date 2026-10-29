@@ -5,6 +5,7 @@ import asyncio
 from datetime import date
 
 from app.core.config import get_settings
+from app.core.db import create_pool, init_schema
 from app.core.redis import create_redis
 from app.services.elexon_client import ElexonClient
 from app.services.ingestion_service import ingest
@@ -13,12 +14,14 @@ from app.services.ingestion_service import ingest
 async def main(start: date, end: date) -> None:
     settings = get_settings()
     redis = create_redis(settings)
+    db = await create_pool(settings)
     client = ElexonClient(settings.elexon_base_url)
     try:
-        coverage = await ingest(redis, client, start, end, settings.ingest_horizon_h)
-        print(coverage)
+        await init_schema(db)
+        print(await ingest(db, redis, client, start, end, settings.ingest_horizon_h))
     finally:
         await client.aclose()
+        await db.close()
         await redis.aclose()
 
 

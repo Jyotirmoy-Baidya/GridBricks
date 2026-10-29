@@ -3,7 +3,7 @@ from typing import Annotated
 
 from fastapi import APIRouter, Query
 
-from app.api.deps import RedisDep, SettingsDep
+from app.api.deps import DbDep, RedisDep, SettingsDep
 from app.controllers import day_ahead_controller as ctl
 from app.schemas.day_ahead import DayAheadResponse
 
@@ -16,6 +16,6 @@ CutoffQuery = Annotated[
 
 @router.get("/day-ahead/{delivery_date}", response_model=DayAheadResponse)
 async def day_ahead(
-    delivery_date: date, redis: RedisDep, settings: SettingsDep, cutoff: CutoffQuery = "09:00"
+    delivery_date: date, db: DbDep, redis: RedisDep, settings: SettingsDep, cutoff: CutoffQuery = "09:00"
 ) -> DayAheadResponse:
-    return await ctl.day_ahead(redis, settings, delivery_date, cutoff)
+    return await ctl.day_ahead(db, redis, settings, delivery_date, cutoff)

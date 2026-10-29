@@ -6,7 +6,16 @@ from typing import Any
 from pydantic import BaseModel
 from redis.asyncio import Redis
 
-from app.repositories import meta_repo
+from app.repositories import keys
+
+
+async def get_version(redis: Redis) -> int:
+    return int(await redis.get(keys.DATA_VERSION) or 0)
+
+
+async def bump_version(redis: Redis) -> int:
+    """Called after every load. Cache keys embed the version, so old entries are orphaned."""
+    return int(await redis.incr(keys.DATA_VERSION))
 
 
 async def get_or_compute[T: BaseModel](
@@ -17,8 +26,8 @@ async def get_or_compute[T: BaseModel](
     compute: Callable[[], Awaitable[T]],
     ttl_s: int,
 ) -> T:
-    """Serve from Redis when present. Keys embed data:version, so a new ingest orphans old entries."""
-    version = await meta_repo.get_version(redis)
+    """Serve from Redis when present, otherwise compute from Postgres and store with a TTL."""
+    version = await get_version(redis)
     digest = hashlib.sha1(json.dumps(params, sort_keys=True, default=str).encode()).hexdigest()[:16]
     key = f"cache:v{version}:{endpoint}:{digest}"
     hit = await redis.get(key)

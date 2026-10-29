@@ -2,6 +2,7 @@ import gzip
 import json
 from pathlib import Path
 
+import asyncpg
 from redis.asyncio import Redis
 
 from app.repositories import meta_repo
@@ -18,13 +19,13 @@ def write_seed(path: Path, actuals: list[ActualRow], forecasts: list[ForecastRow
         json.dump(payload, f, separators=(",", ":"))
 
 
-async def load_seed_if_empty(redis: Redis, path: Path = SEED_PATH) -> bool:
-    """Load the bundled snapshot when Redis holds no data. Returns True if it loaded."""
-    if await meta_repo.get_coverage(redis) or not path.exists():
+async def load_seed_if_empty(db: asyncpg.Pool, redis: Redis, path: Path = SEED_PATH) -> bool:
+    """Load the bundled snapshot when the database holds no data. Returns True if it loaded."""
+    if await meta_repo.get_coverage(db) or not path.exists():
         return False
     with gzip.open(path, "rt", encoding="utf-8") as f:
         payload = json.load(f)
     actuals = [(int(t), int(mw)) for t, mw in payload["actuals"]]
     forecasts = [(int(t), int(p), int(mw)) for t, p, mw in payload["forecasts"]]
-    await store_rows(redis, actuals, forecasts)
+    await store_rows(db, redis, actuals, forecasts)
     return True
