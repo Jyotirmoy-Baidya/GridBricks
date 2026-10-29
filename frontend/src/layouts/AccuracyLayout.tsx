@@ -1,4 +1,4 @@
-import { NavLink, Outlet } from 'react-router-dom'
+import { NavLink, Outlet, useLocation } from 'react-router-dom'
 
 const tabs = [
   { to: '/dashboard/accuracy', label: 'Summary', end: true },
@@ -8,17 +8,18 @@ const tabs = [
 ]
 
 export default function AccuracyLayout() {
+  const { search } = useLocation()
   return (
-    <div className="flex flex-col gap-4">
-      <div role="tablist" className="flex flex-wrap gap-1 border-b border-slate-300">
+    <>
+      <div role="tablist" aria-label="Accuracy views" className="-mt-2 flex flex-wrap gap-1 border-b border-slate-300">
         {tabs.map((t) => (
           <NavLink
             key={t.to}
-            to={t.to}
+            to={{ pathname: t.to, search }}
             end={t.end}
             role="tab"
             className={({ isActive }) =>
-              `border-b-2 px-4 py-2 ${isActive ? 'border-teal-700 font-semibold' : 'border-transparent text-slate-600'}`
+              `min-h-11 border-b-2 px-4 py-2.5 ${isActive ? 'border-wind font-semibold text-slate-900' : 'border-transparent text-slate-600 hover:text-slate-900'}`
             }
           >
             {t.label}
@@ -26,6 +27,6 @@ export default function AccuracyLayout() {
         ))}
       </div>
       <Outlet />
-    </div>
+    </>
   )
 }

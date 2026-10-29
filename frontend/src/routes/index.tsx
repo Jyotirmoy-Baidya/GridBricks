@@ -1,9 +1,22 @@
+import { lazy, Suspense, type ComponentType } from 'react'
 import { createBrowserRouter, Navigate } from 'react-router-dom'
-import LazyPage from '@/components/common/LazyPage'
+import type { RouteHandle } from '@/components/layout/Topbar'
+import PageSkeleton from '@/components/skeletons/PageSkeleton'
 import AccuracyLayout from '@/layouts/AccuracyLayout'
 import DashboardLayout from '@/layouts/DashboardLayout'
 import RootLayout from '@/layouts/RootLayout'
 import NotFoundPage from '@/pages/NotFoundPage'
+
+const page = (loader: () => Promise<{ default: ComponentType }>) => {
+  const Page = lazy(loader)
+  return (
+    <Suspense fallback={<PageSkeleton />}>
+      <Page />
+    </Suspense>
+  )
+}
+
+const h = (title: string, crumbs: string[], filters: RouteHandle['filters']): RouteHandle => ({ title, crumbs, filters })
 
 export const router = createBrowserRouter([
   {
@@ -14,20 +27,21 @@ export const router = createBrowserRouter([
         path: '/dashboard',
         element: <DashboardLayout />,
         children: [
-          { index: true, element: <LazyPage title="Overview" /> },
-          { path: 'forecasts', element: <LazyPage title="Forecasts" /> },
+          { index: true, element: page(() => import('@/pages/overview/OverviewPage')), handle: h('Wind forecast overview', ['Overview'], ['range', 'horizon']) },
+          { path: 'forecasts', element: page(() => import('@/pages/forecasts/ForecastsPage')), handle: h('Actual vs forecast', ['Forecasts'], ['range', 'horizon']) },
           {
             path: 'accuracy',
             element: <AccuracyLayout />,
+            handle: h('Forecast accuracy', ['Accuracy'], ['range', 'horizon']),
             children: [
-              { index: true, element: <LazyPage title="Accuracy summary" /> },
-              { path: 'horizon', element: <LazyPage title="Error by horizon" /> },
-              { path: 'time-of-day', element: <LazyPage title="Error by time of day" /> },
-              { path: 'distribution', element: <LazyPage title="Error distribution" /> },
+              { index: true, element: page(() => import('@/pages/accuracy/SummaryPage')) },
+              { path: 'horizon', element: page(() => import('@/pages/accuracy/HorizonPage')), handle: h('Forecast accuracy', ['Accuracy', 'By horizon'], ['range']) },
+              { path: 'time-of-day', element: page(() => import('@/pages/accuracy/TimeOfDayPage')), handle: h('Forecast accuracy', ['Accuracy', 'Time of day'], ['range', 'horizon']) },
+              { path: 'distribution', element: page(() => import('@/pages/accuracy/DistributionPage')), handle: h('Forecast accuracy', ['Accuracy', 'Distribution'], ['range', 'horizon']) },
             ],
           },
-          { path: 'day-ahead/:date?', element: <LazyPage title="Day-ahead planner" /> },
-          { path: 'methodology', element: <LazyPage title="Methodology" /> },
+          { path: 'day-ahead/:date?', element: page(() => import('@/pages/day-ahead/DayAheadPage')), handle: h('Day-ahead planner', ['Day-ahead'], ['cutoff']) },
+          { path: 'methodology', element: page(() => import('@/pages/methodology/MethodologyPage')), handle: h('Methodology', ['Methodology'], []) },
         ],
       },
       { path: '*', element: <NotFoundPage /> },
