@@ -1,9 +1,4 @@
-import { api } from '../axiosInstance'
+import type { Coverage } from '@/types/api'
+import { get } from './http'
 
-export interface Health {
-  status: string
-  redis: boolean
-}
-
-export const getHealth = async (signal?: AbortSignal): Promise<Health> =>
-  (await api.get<Health>('/health', { signal })).data
+export const getCoverage = (signal?: AbortSignal) => get<Coverage>('/meta/coverage', {}, signal)
