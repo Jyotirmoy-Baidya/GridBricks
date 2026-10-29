@@ -80,3 +80,13 @@ async def test_seed_loads_only_into_empty_database(db, redis, tmp_path):
     assert await load_seed_if_empty(db, redis, path) is True
     assert await actuals_repo.get_range(db, 0, 5000) == [(1000, 5)]
     assert await load_seed_if_empty(db, redis, path) is False  # already populated
+
+
+def test_windows_split_a_range_into_inclusive_chunks():
+    from app.services.ingestion_service import windows
+
+    assert windows(date(2026, 1, 1), date(2026, 1, 31)) == [(date(2026, 1, 1), date(2026, 1, 31))]
+    got = windows(date(2025, 12, 30), date(2026, 3, 1), days=31)
+    assert got[0] == (date(2025, 12, 30), date(2026, 1, 29))
+    assert got[1][0] == date(2026, 1, 30) and got[-1][1] == date(2026, 3, 1)
+    assert all(a <= b for a, b in got)

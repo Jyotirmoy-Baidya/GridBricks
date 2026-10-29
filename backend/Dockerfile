@@ -19,7 +19,7 @@ COPY app ./app
 COPY scripts ./scripts
 COPY data ./data
 
-RUN useradd -r -u 1001 appuser && chown -R appuser /srv
+RUN useradd -r -m -u 1001 appuser && chown -R appuser /srv
 USER appuser
 
 EXPOSE 8000
