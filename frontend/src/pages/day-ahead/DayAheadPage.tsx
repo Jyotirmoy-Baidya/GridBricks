@@ -22,10 +22,12 @@ const DATE_RE = /^\d{4}-\d{2}-\d{2}$/
 function DayKpis({ d }: { d: DayAheadResponse }) {
   const missing = d.hours.filter((h) => h.forecast == null).length
   const gwh = (v: number | null) => (v == null ? '–' : v.toFixed(1))
+  const publishes = d.hours.flatMap((h) => (h.publish_time ? [h.publish_time] : []))
+  const latestPublish = publishes.length ? publishes.reduce((a, b) => (a > b ? a : b)) : null
   return (
     <>
       <KpiRow>
-        <KpiTile label="Cut-off" value={formatLondon(d.cutoff, 'HH:mm')} note={`${formatLondon(d.cutoff, 'ddd D MMM')} London time`} />
+        <KpiTile label="Latest forecast available" value={latestPublish ? formatLondon(latestPublish, 'HH:mm') : '–'} note={latestPublish ? `Published ${formatLondon(latestPublish, 'ddd D MMM')} · cut-off ${formatLondon(d.cutoff, 'HH:mm')}` : `Nothing published before the ${formatLondon(d.cutoff, 'HH:mm')} cut-off`} />
         <KpiTile label="Forecast wind energy" value={gwh(d.forecast_gwh)} unit="GWh" tone="forecast" note="Sum of 24 hourly forecasts" />
         <KpiTile label="Wind you can count on" value={gwh(d.count_on_gwh)} unit="GWh" tone="dark" note="Forecast less January's P90 over-forecast" />
         <KpiTile label="Actual (after the fact)" value={gwh(d.actual_gwh)} unit="GWh" tone="actual" note={d.actual_gwh == null ? 'Not all hours reported' : 'Hourly outturn from FUELHH'} />
@@ -46,13 +48,14 @@ function HourTable({ d }: { d: DayAheadResponse }) {
         <thead>
           <tr>
             <th className={`${TH} text-left`}>Hour (London)</th>
-            {['Horizon', 'Forecast', 'P10', 'P90', 'Count-on', 'Actual'].map((h) => <th key={h} className={TH}>{h}</th>)}
+            {['Published', 'Horizon', 'Forecast', 'P10', 'P90', 'Count-on', 'Actual'].map((h) => <th key={h} className={TH}>{h}</th>)}
           </tr>
         </thead>
         <tbody>
           {d.hours.map((h) => (
             <tr key={h.t} className="text-right">
               <td className="border-b border-slate-100 px-2.5 py-1.5 text-left font-mono text-[12.5px]">{formatLondon(h.t, 'HH:mm')}</td>
+              <td className="border-b border-slate-100 px-2.5 py-1.5 text-slate-600">{h.publish_time ? formatLondon(h.publish_time, 'D MMM HH:mm') : '–'}</td>
               <td className="border-b border-slate-100 px-2.5 py-1.5 text-slate-600">{h.horizon_h} h</td>
               <td className="border-b border-slate-100 px-2.5 py-1.5 font-semibold text-fc">{formatInt(h.forecast)}</td>
               <td className="border-b border-slate-100 px-2.5 py-1.5">{formatInt(h.p10)}</td>
