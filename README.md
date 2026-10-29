@@ -72,7 +72,7 @@ cd ../frontend && npm install && npm run dev                                  # 
 ### Tests
 
 ```bash
-cd backend && python -m pytest -q     # 36 tests; needs the postgres container (docker compose up -d postgres)
+cd backend && python -m pytest -q     # 40 tests; needs the postgres container (docker compose up -d postgres)
 cd frontend && npx vitest run         # 14 tests
 ```
 
@@ -136,7 +136,8 @@ Time ranges are ISO-8601 UTC, end exclusive, capped at 45 days. Bad input return
 
 - Forecast error grows with lead time. In January 2026, MAE is about 1.8 GW at 1 h ahead and 2.4 GW at 48 h.
 - The forecast runs **high by a steady amount**: about +1.6 GW in January and about +2.7 GW in the latest month. WINDFOR may cover wind that FUELHH does not meter, which would explain this; it has not been confirmed. The "count-on" line subtracts the P90 over-forecast, so it is conservative.
-- The latest month is worse than January (MAE about 2.8 GW at 4 h). One of its largest misses is a FUELHH reading of exactly 0 MW, which is probably a missing value. It has not been filtered out.
+- The latest month is worse than January (MAE about 2.8 GW at 4 h).
+- **Data quality:** a few FUELHH half-hours are exactly 0 MW (4 of about 14,500), each isolated mid-day among smooth neighbours; the lowest genuine reading is about 400 MW. They are treated as missing values and dropped at ingest (and purged from earlier loads). Left in, one of them was the single largest "forecast miss".
 
 ## Assumptions and limits
 

@@ -15,6 +15,12 @@ async def upsert(db: Db, rows: list[ActualRow]) -> None:
     )
 
 
+async def purge_invalid(db: Db) -> int:
+    """Delete readings of 0 MW or less (missing values) stored by an earlier load. Returns the count."""
+    status = await db.execute("DELETE FROM actual_generation WHERE generation_mw <= 0")
+    return int(status.split()[-1])
+
+
 async def get_range(db: Db, start_epoch: int, end_epoch: int) -> list[ActualRow]:
     """Actuals with start_epoch <= target < end_epoch, ascending."""
     rows = await db.fetch(

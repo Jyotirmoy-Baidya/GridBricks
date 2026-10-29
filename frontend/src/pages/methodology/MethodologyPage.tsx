@@ -38,6 +38,7 @@ export default function MethodologyPage() {
           <li>National-level GB wind only, from Elexon BMRS. No demand, price or other fuel data.</li>
           <li>The loaded history runs from 30 December 2025 to the latest full day, and the date pickers allow any day in it. The January 2026 study window the brief asks for sits inside that range; the pages open on the most recent month.</li>
           <li>All times are stored in UTC and shown in Europe/London.</li>
+          <li>An actual reading of 0 MW is treated as missing and dropped. National GB wind does not really fall to zero (the lowest genuine reading is about 400 MW), and the few zeros are isolated values that would otherwise show up as huge forecast misses.</li>
           <li>WINDFOR may cover wind that FUELHH does not meter, which would explain a persistent positive bias. This has not been confirmed with Elexon.</li>
         </ul>
       </Card>

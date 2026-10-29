@@ -26,3 +26,13 @@ def test_clean_forecasts_drops_negative_and_long_horizons():
         fc("2026-01-02T00:00:00Z", pub, 5),  # duplicate, last wins
     ]
     assert [row[2] for row in clean_forecasts(raw, 48)] == [5, 3]
+
+
+def test_zero_and_negative_actuals_are_treated_as_missing():
+    raw = [
+        {"fuelType": "WIND", "startTime": "2026-01-01T00:00:00Z", "generation": 0},
+        {"fuelType": "WIND", "startTime": "2026-01-01T00:30:00Z", "generation": -5},
+        {"fuelType": "WIND", "startTime": "2026-01-01T01:00:00Z", "generation": 1},  # tiny but real
+        {"fuelType": "WIND", "startTime": "2026-01-01T01:30:00Z", "generation": 400},
+    ]
+    assert [mw for _, mw in clean_actuals(raw)] == [1, 400]

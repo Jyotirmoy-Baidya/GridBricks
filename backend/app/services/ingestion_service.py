@@ -68,6 +68,7 @@ async def store_rows(
 ) -> None:
     """Write cleaned rows in one transaction, then invalidate cached results."""
     async with db.acquire() as conn, conn.transaction():
+        await actuals_repo.purge_invalid(conn)
         await actuals_repo.upsert(conn, actuals)
         await forecasts_repo.upsert(conn, forecasts)
         await meta_repo.mark_ingested(conn)

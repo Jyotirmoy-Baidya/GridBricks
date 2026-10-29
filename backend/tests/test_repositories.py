@@ -66,3 +66,11 @@ async def test_schema_setup_is_safe_to_run_concurrently(db):
     await asyncio.gather(*(init_schema(db) for _ in range(4)))
     tables = await db.fetch("SELECT tablename FROM pg_tables WHERE schemaname = current_schema()")
     assert {r["tablename"] for r in tables} == {"actual_generation", "wind_forecast", "ingest_meta"}
+
+
+async def test_purge_invalid_removes_zero_readings_and_comparison_skips_them(db):
+    await actuals_repo.upsert(db, [(T, 0), (T + H, 120), (T + 2 * H, 130)])
+    await forecasts_repo.upsert(db, [(T, T - 6 * H, 90), (T + H, T - 6 * H, 100)])
+    assert await actuals_repo.purge_invalid(db) == 1
+    rows = await comparison_repo.compare(db, T, T + 3 * H, 4)
+    assert [r.t for r in rows] == [T + H, T + 2 * H]  # the zero hour is gone, not a huge "miss"

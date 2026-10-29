@@ -9,12 +9,19 @@ ForecastRow = tuple[int, int, int]  # (target_epoch, publish_epoch, mw)
 
 
 def clean_actuals(raw: list[dict[str, Any]]) -> list[ActualRow]:
-    """Keep WIND rows, parse to epoch, dedupe on target time (last row wins)."""
+    """Keep WIND rows, parse to epoch, dedupe on target time (last row wins).
+
+    A reading of 0 MW (or less) is treated as missing. National GB wind never really drops to
+    zero: in the loaded data the lowest genuine reading is about 400 MW, and the few zeros are
+    isolated mid-day values among smooth neighbours. Kept, they would show up as the largest
+    "forecast misses" and distort every error metric.
+    """
     out: dict[int, int] = {}
     for r in raw:
-        if r.get("fuelType") != "WIND" or r.get("generation") is None:
+        mw = r.get("generation")
+        if r.get("fuelType") != "WIND" or mw is None or mw <= 0:
             continue
-        out[to_epoch(r["startTime"])] = int(r["generation"])
+        out[to_epoch(r["startTime"])] = int(mw)
     return sorted(out.items())
 
 
