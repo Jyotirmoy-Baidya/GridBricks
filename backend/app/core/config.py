@@ -10,6 +10,7 @@ class Settings(BaseSettings):
     elexon_base_url: str = "https://data.elexon.co.uk/bmrs/api/v1"
     day_ahead_cutoff: str = "09:00"
     max_horizon_h: int = 48
+    ingest_horizon_h: int = 72  # keep forecasts beyond 48 h so a 48 h cut-off still has data
     cache_ttl_s: int = 3600
     cors_origins: str = "http://localhost:5173"
     admin_token: str = "change-me"

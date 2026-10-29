@@ -22,19 +22,19 @@ async def get_targets(redis: Redis, start_epoch: int, end_epoch: int) -> list[in
     return [int(str(m)) for m in members]
 
 
-async def latest_before_cutoff(
-    redis: Redis, targets: list[int], horizon_h: float
+async def latest_at_or_before(
+    redis: Redis, cutoffs: dict[int, int]
 ) -> dict[int, tuple[int, int]]:
-    """For each target T, the newest forecast with publish <= T - horizon_h.
+    """For each target T, the newest forecast with publish <= cutoffs[T].
 
     Returns {target: (publish_epoch, mw)}; targets with no such forecast are absent.
     """
-    if not targets:
+    if not cutoffs:
         return {}
+    targets = list(cutoffs)
     pipe = redis.pipeline(transaction=False)
     for t in targets:
-        cutoff = t - int(horizon_h * HOUR)
-        pipe.zrevrangebyscore(keys.forecast_key(t), cutoff, "-inf", start=0, num=1)
+        pipe.zrevrangebyscore(keys.forecast_key(t), cutoffs[t], "-inf", start=0, num=1)
     results = await pipe.execute()
     out: dict[int, tuple[int, int]] = {}
     for t, res in zip(targets, results, strict=True):
@@ -42,3 +42,10 @@ async def latest_before_cutoff(
             publish, mw = res[0].split(":")
             out[t] = (int(publish), int(mw))
     return out
+
+
+async def latest_before_cutoff(
+    redis: Redis, targets: list[int], horizon_h: float
+) -> dict[int, tuple[int, int]]:
+    """Horizon mode: newest forecast with publish <= T - horizon_h for every target."""
+    return await latest_at_or_before(redis, {t: t - int(horizon_h * HOUR) for t in targets})
