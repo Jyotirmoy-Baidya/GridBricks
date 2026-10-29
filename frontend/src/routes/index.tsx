@@ -1,20 +1,12 @@
-import { lazy, Suspense, type ComponentType } from 'react'
 import { createBrowserRouter, Navigate } from 'react-router-dom'
 import type { RouteHandle } from '@/components/layout/Topbar'
-import PageSkeleton from '@/components/skeletons/PageSkeleton'
 import AccuracyLayout from '@/layouts/AccuracyLayout'
 import DashboardLayout from '@/layouts/DashboardLayout'
 import RootLayout from '@/layouts/RootLayout'
 import NotFoundPage from '@/pages/NotFoundPage'
+import LazyRoute, { type PageLoader } from './LazyRoute'
 
-const page = (loader: () => Promise<{ default: ComponentType }>) => {
-  const Page = lazy(loader)
-  return (
-    <Suspense fallback={<PageSkeleton />}>
-      <Page />
-    </Suspense>
-  )
-}
+const page = (loader: PageLoader) => <LazyRoute loader={loader} />
 
 const h = (title: string, crumbs: string[], filters: RouteHandle['filters']): RouteHandle => ({ title, crumbs, filters })
 
@@ -38,6 +30,7 @@ export const router = createBrowserRouter([
               { path: 'horizon', element: page(() => import('@/pages/accuracy/HorizonPage')), handle: h('Forecast accuracy', ['Accuracy', 'By horizon'], ['range']) },
               { path: 'time-of-day', element: page(() => import('@/pages/accuracy/TimeOfDayPage')), handle: h('Forecast accuracy', ['Accuracy', 'Time of day'], ['range', 'horizon']) },
               { path: 'distribution', element: page(() => import('@/pages/accuracy/DistributionPage')), handle: h('Forecast accuracy', ['Accuracy', 'Distribution'], ['range', 'horizon']) },
+              { path: 'reliability', element: page(() => import('@/pages/accuracy/ReliabilityPage')), handle: h('Forecast accuracy', ['Accuracy', 'Reliability'], ['range', 'horizon']) },
             ],
           },
           { path: 'day-ahead/:date?', element: page(() => import('@/pages/day-ahead/DayAheadPage')), handle: h('Day-ahead planner', ['Day-ahead'], ['cutoff']) },

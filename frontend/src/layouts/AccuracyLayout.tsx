@@ -5,6 +5,7 @@ const tabs = [
   { to: '/dashboard/accuracy/horizon', label: 'By horizon' },
   { to: '/dashboard/accuracy/time-of-day', label: 'Time of day' },
   { to: '/dashboard/accuracy/distribution', label: 'Distribution' },
+  { to: '/dashboard/accuracy/reliability', label: 'Reliability' },
 ]
 
 export default function AccuracyLayout() {

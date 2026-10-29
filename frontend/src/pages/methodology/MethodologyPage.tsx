@@ -29,7 +29,19 @@ export default function MethodologyPage() {
 
       <Card title="Count-on wind and the range">
         <p className={P}>
-          For each delivery hour, the P10–P90 range and the count-on line use the distribution of past errors at the same horizon. Count-on is the forecast minus the P90 over-forecast, floored at zero: a conservative wind figure to plan purchases against. These figures are computed from every hour loaded, including the day being viewed, so treat them as an in-sample guide rather than a tested prediction interval.
+          For each delivery hour, the P10–P90 range and the count-on line use the distribution of past errors at the same horizon, learned from the 30 days before the day being viewed. Count-on is the forecast minus the P90 over-forecast, floored at zero: a conservative wind figure to plan purchases against. The bias-adjusted forecast removes the typical (mean) error at that horizon. With under a week of earlier data they are learned from all loaded data instead, and the page says so.
+        </p>
+      </Card>
+
+      <Card title="How reliable the correction is">
+        <p className={P}>
+          Accuracy › Reliability tests the method honestly: it learns the error pattern on the days before a range, then scores it on the range, hours it has never seen. It reports how often the P10–P90 range held the actual (a good 80% range should hold it about 80% of the time), how often actual output reached the count-on line (target 90%), and how much the bias adjustment shrinks the error. The forecast's steady offset drifts over time, so a short learning window (14 to 30 days) tracks it better than all history; you can choose the window on that page. These ranges are guides, not guarantees.
+        </p>
+      </Card>
+
+      <Card title="What would I need to buy?">
+        <p className={P}>
+          On the Day-ahead and Live pages you enter an expected demand in MW, held flat across the day. For each way of reading the wind forecast (as published, with the usual offset removed, or only the safe count-on wind) the page adds up the hours where demand exceeds wind. That is the power still to buy. Demand is not in the Elexon data this app is limited to, so the figure is a what-if, and surplus wind is not credited.
         </p>
       </Card>
 

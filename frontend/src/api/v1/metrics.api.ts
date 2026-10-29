@@ -1,5 +1,7 @@
 import type {
   ByHorizonResponse,
+  Calibration,
+  CalibrationParams,
   ByHourResponse,
   DistributionResponse,
   HorizonParams,
@@ -21,3 +23,6 @@ export const getByHour = (p: HorizonParams, signal?: AbortSignal) =>
 
 export const getDistribution = (p: HorizonParams, signal?: AbortSignal) =>
   get<DistributionResponse>('/metrics/distribution', { ...withHorizon(p), bins: 24 }, signal)
+
+export const getCalibration = (p: CalibrationParams, signal?: AbortSignal) =>
+  get<Calibration>('/metrics/calibration', { ...withHorizon(p), train_days: p.trainDays }, signal)

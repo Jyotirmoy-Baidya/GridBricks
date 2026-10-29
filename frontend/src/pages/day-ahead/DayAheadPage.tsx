@@ -5,6 +5,9 @@ import ChartLegend from '@/components/charts/ChartLegend'
 import Card from '@/components/common/Card'
 import ResourceView from '@/components/common/ResourceView'
 import HourTable from '@/components/tables/HourTable'
+import BandsBasisNote from '@/components/dayahead/BandsBasisNote'
+import DemandWhatIf from '@/components/dayahead/DemandWhatIf'
+import DownloadCsvButton from '@/components/common/DownloadCsvButton'
 import KpiRow from '@/components/kpi/KpiRow'
 import KpiTile from '@/components/kpi/KpiTile'
 import ChartSkeleton from '@/components/skeletons/ChartSkeleton'
@@ -82,19 +85,26 @@ export default function DayAheadPage() {
             items={[
               { label: 'P10–P90 range', color: COLORS.forecast, kind: 'band' },
               { label: 'Forecast', color: COLORS.forecast },
+              { label: 'Bias-adjusted', color: COLORS.adjusted, kind: 'dashed' },
               { label: 'Count-on', color: COLORS.ink, kind: 'dashed' },
               { label: 'Actual', color: COLORS.actual, kind: 'dot' },
             ]}
           />
         }
-        footer="The range and count-on line come from how wrong forecasts at the same horizon were across all loaded data, so they are an in-sample guide."
+        footer={store.data ? <BandsBasisNote basis={store.data.bands_basis} /> : undefined}
       >
         <ResourceView res={store} skeleton={<ChartSkeleton height={340} />} onRetry={() => void load({ date, cutoff }, true)}>
           {(d) => <BandChart hours={d.hours} height={340} />}
         </ResourceView>
       </Card>
 
-      <Card title="Hour by hour" footer="Values in MW. Horizon grows through the day because one forecast covers all 24 hours.">
+      {store.data && <DemandWhatIf hours={store.data.hours} />}
+
+      <Card
+        title="Hour by hour"
+        actions={store.data ? <DownloadCsvButton hours={store.data.hours} filename={`day-ahead-${date}.csv`} /> : undefined}
+        footer="Values in MW. Horizon grows through the day because one forecast covers all 24 hours."
+      >
         <ResourceView res={store} skeleton={<TableSkeleton rows={8} />} onRetry={() => void load({ date, cutoff }, true)}>
           {(d) => <HourTable hours={d.hours} />}
         </ResourceView>

@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
-import ErrorByHorizonChart, { METRIC_LABEL, type HorizonMetricKey } from '@/components/charts/ErrorByHorizonChart'
+import ErrorByHorizonChart from '@/components/charts/ErrorByHorizonChart'
 import Card from '@/components/common/Card'
 import ResourceView from '@/components/common/ResourceView'
 import ChartSkeleton from '@/components/skeletons/ChartSkeleton'
@@ -7,6 +7,7 @@ import TableSkeleton from '@/components/skeletons/TableSkeleton'
 import { useQueryParams } from '@/hooks/useQueryParams'
 import { useByHorizonStore } from '@/store/useMetricsStore'
 import { formatInt, formatPct, formatSigned } from '@/utils/format'
+import { METRIC_LABEL, type HorizonMetricKey } from '@/utils/metrics'
 
 const SELECTED = [1, 4, 12, 24, 36, 48]
 const TH = 'border-b border-slate-200 px-2.5 py-2 text-right text-xs font-semibold uppercase tracking-wider text-slate-600'
