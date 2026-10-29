@@ -1,14 +1,7 @@
-ACTUAL_INDEX = "wind:actual"  # zset: member=target epoch, score=target epoch
-ACTUAL_VALUES = "wind:actual:mw"  # hash: target epoch -> mw (actuals can be revised)
-FC_TARGETS = "wind:fc:targets"  # zset: member=score=target epoch
-DATA_VERSION = "data:version"
-COVERAGE = "meta:coverage"
+"""Redis keys. Redis holds only disposable state: cache, raw-response cache, lock, rate limits."""
+
+DATA_VERSION = "data:version"  # bumped on every load; embedded in cache keys
 INGEST_LOCK = "lock:ingest"
-
-
-def forecast_key(target_epoch: int) -> str:
-    """zset: score=publish epoch, member='<publish epoch>:<mw>'."""
-    return f"wind:fc:{target_epoch}"
 
 
 def raw_key(dataset: str, start: str, end: str) -> str:

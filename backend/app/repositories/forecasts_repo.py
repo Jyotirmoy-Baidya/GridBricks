@@ -1,51 +1,52 @@
-from redis.asyncio import Redis
-
-from app.repositories import keys
+from app.core.db import Db
 from app.services.cleaning import ForecastRow
 
-CHUNK = 5000
-HOUR = 3600
+_LATEST = """
+    SELECT DISTINCT ON (target_time)
+           extract(epoch FROM target_time)::bigint  AS t,
+           extract(epoch FROM publish_time)::bigint AS p,
+           generation_mw                            AS mw
+    FROM wind_forecast
+    WHERE target_time >= to_timestamp($1::bigint)
+      AND target_time <  to_timestamp($2::bigint)
+      AND target_time = date_trunc('hour', target_time)
+      AND publish_time <= {cutoff}
+    ORDER BY target_time, publish_time DESC
+"""
 
 
-async def upsert(redis: Redis, rows: list[ForecastRow]) -> None:
-    """Forecasts are immutable per (target, publish), so the member embeds the value."""
-    for i in range(0, len(rows), CHUNK):
-        pipe = redis.pipeline(transaction=False)
-        for target, publish, mw in rows[i : i + CHUNK]:
-            pipe.zadd(keys.forecast_key(target), {f"{publish}:{mw}": publish})
-            pipe.zadd(keys.FC_TARGETS, {str(target): target})
-        await pipe.execute()
+async def upsert(db: Db, rows: list[ForecastRow]) -> None:
+    await db.execute(
+        """
+        INSERT INTO wind_forecast (target_time, publish_time, generation_mw)
+        SELECT to_timestamp(t), to_timestamp(p), mw
+        FROM unnest($1::bigint[], $2::bigint[], $3::int[]) AS u(t, p, mw)
+        ON CONFLICT (target_time, publish_time) DO UPDATE SET generation_mw = EXCLUDED.generation_mw
+        """,
+        [t for t, _, _ in rows],
+        [p for _, p, _ in rows],
+        [mw for _, _, mw in rows],
+    )
 
 
-async def get_targets(redis: Redis, start_epoch: int, end_epoch: int) -> list[int]:
-    members = await redis.zrangebyscore(keys.FC_TARGETS, start_epoch, end_epoch)
-    return [int(str(m)) for m in members]
+def _pairs(records: list) -> dict[int, tuple[int, int]]:  # type: ignore[type-arg]
+    return {r["t"]: (r["p"], r["mw"]) for r in records}
 
 
-async def latest_at_or_before(
-    redis: Redis, cutoffs: dict[int, int]
+async def latest_by_horizon(
+    db: Db, start: int, end: int, horizon_h: float
 ) -> dict[int, tuple[int, int]]:
-    """For each target T, the newest forecast with publish <= cutoffs[T].
+    """Horizon mode: per target hour in [start, end), newest forecast with publish <= target - h.
 
-    Returns {target: (publish_epoch, mw)}; targets with no such forecast are absent.
+    Returns {target_epoch: (publish_epoch, mw)}; hours with no early-enough forecast are absent.
     """
-    if not cutoffs:
-        return {}
-    targets = list(cutoffs)
-    pipe = redis.pipeline(transaction=False)
-    for t in targets:
-        pipe.zrevrangebyscore(keys.forecast_key(t), cutoffs[t], "-inf", start=0, num=1)
-    results = await pipe.execute()
-    out: dict[int, tuple[int, int]] = {}
-    for t, res in zip(targets, results, strict=True):
-        if res:
-            publish, mw = res[0].split(":")
-            out[t] = (int(publish), int(mw))
-    return out
+    sql = _LATEST.format(cutoff="target_time - ($3::float8 * interval '1 hour')")
+    return _pairs(await db.fetch(sql, start, end, float(horizon_h)))
 
 
-async def latest_before_cutoff(
-    redis: Redis, targets: list[int], horizon_h: float
+async def latest_at_cutoff(
+    db: Db, start: int, end: int, cutoff_epoch: int
 ) -> dict[int, tuple[int, int]]:
-    """Horizon mode: newest forecast with publish <= T - horizon_h for every target."""
-    return await latest_at_or_before(redis, {t: t - int(horizon_h * HOUR) for t in targets})
+    """Day-ahead mode: per target hour in [start, end), newest forecast with publish <= one cut-off."""
+    sql = _LATEST.format(cutoff="to_timestamp($3::bigint)")
+    return _pairs(await db.fetch(sql, start, end, cutoff_epoch))
