@@ -18,6 +18,19 @@ A web app for a GB energy utility's day-ahead trading desk. It shows the latest 
 | **Live** | Tomorrow's hourly forecast from the newest Elexon publish, fetched on demand and not stored. |
 | **Methodology** | The selection rule, the metrics and the assumptions in plain language. |
 
+![Overview](screenshots/overview.jpg)
+
+![Day-ahead planner](screenshots/day-ahead.jpg)
+
+<details>
+<summary>More screenshots</summary>
+
+![Accuracy by horizon](screenshots/accuracy-by-horizon.jpg)
+
+![Live forecast](screenshots/live.jpg)
+
+</details>
+
 ### The core rule
 
 For each delivery hour, the forecast used is the **newest one published at least *h* hours before it**. Later forecasts would not have been available when the decision was made, so they are never used. If none is early enough the hour is a gap and counts against coverage. Day-ahead mode uses one fixed cut-off on the day before instead of a fixed *h*.
@@ -84,6 +97,7 @@ Browser ── React SPA ── /api/v1 ── FastAPI ──┬── PostgreSQ
 .
 ├── README.md  DEPLOY.md  Makefile  docker-compose.yml  .env.example
 ├── .github/workflows/ci.yml           lint, type-check and tests for both apps
+├── screenshots/                       images used in this README
 ├── backend/
 │   ├── Dockerfile                     multi-stage, non-root, gunicorn + uvicorn workers
 │   ├── pyproject.toml                 dependencies, ruff, mypy, pytest config
