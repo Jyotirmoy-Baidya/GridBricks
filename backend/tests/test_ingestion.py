@@ -90,3 +90,13 @@ def test_windows_split_a_range_into_inclusive_chunks():
     assert got[0] == (date(2025, 12, 30), date(2026, 1, 29))
     assert got[1][0] == date(2026, 1, 30) and got[-1][1] == date(2026, 3, 1)
     assert all(a <= b for a, b in got)
+
+
+async def test_concurrent_seed_loads_exactly_once(db, redis, tmp_path):
+    import asyncio
+
+    path = tmp_path / "seed.json.gz"
+    write_seed(path, [(1000, 5), (4600, 6)], [(4600, 1000, 7)])
+    results = await asyncio.gather(*(load_seed_if_empty(db, redis, path) for _ in range(4)))
+    assert sorted(results) == [False, False, False, True]
+    assert await actuals_repo.get_range(db, 0, 10_000) == [(1000, 5), (4600, 6)]

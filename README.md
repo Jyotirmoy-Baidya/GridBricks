@@ -5,7 +5,7 @@ A web app for a GB energy utility's day-ahead trading desk. It shows the latest 
 - **Data:** Elexon BMRS, national level only. Actuals from `FUELHH` (fuel type `WIND`), forecasts from `WINDFOR`.
 - **Stack:** React + TypeScript (frontend), Python FastAPI (backend), PostgreSQL (data), Redis (cache), Docker.
 
-**Live app:** not deployed yet. See [DEPLOY.md](DEPLOY.md) for the Heroku and Vercel steps.
+**Live app:** not deployed yet. The Heroku setup is prepared; see [DEPLOY.md](DEPLOY.md).
 
 ## What it does
 
@@ -42,13 +42,13 @@ Error is `forecast − actual`, so a positive number means the forecast was too 
 Needs Docker.
 
 ```bash
-docker compose up --build
+./startup.sh
 ```
 
-Open <http://localhost:5173>. On first start the API creates its tables and loads the bundled snapshot (`backend/data/seed.json.gz`, 30 Dec 2025 to 28 Oct 2026), so it works without calling Elexon. To pull fresh data up to today:
+This builds and starts everything with `docker compose`, waits until the API reports healthy, and prints the URLs. Open <http://localhost:5173>. Other commands: `./startup.sh ingest | logs | stop | reset`. (`docker compose up --build` works too.) On first start the API creates its tables and loads the bundled snapshot (`backend/data/seed.json.gz`, 30 Dec 2025 to 28 Oct 2026), so it works without calling Elexon. To pull fresh data up to today:
 
 ```bash
-make ingest        # docker compose exec api python -m scripts.ingest --from 2025-12-30 --to <today>
+./startup.sh ingest   # or: make ingest
 ```
 
 Other commands: `make down` (keep data), `make reset` (wipe the database volume), `make test`, `make lint`, `make seed` (rebuild the snapshot from Elexon).
@@ -96,10 +96,13 @@ Browser ── React SPA ── /api/v1 ── FastAPI ──┬── PostgreSQ
 ```
 .
 ├── README.md  DEPLOY.md  Makefile  docker-compose.yml  .env.example
+├── startup.sh                         run everything locally in Docker
+├── deploy-heroku.sh                   deploy the API to Heroku (run when ready)
 ├── .github/workflows/ci.yml           lint, type-check and tests for both apps
 ├── screenshots/                       images used in this README
 ├── backend/
 │   ├── Dockerfile                     multi-stage, non-root, gunicorn + uvicorn workers
+│   ├── heroku.yml  app.json           Heroku build and add-on configuration
 │   ├── pyproject.toml                 dependencies, ruff, mypy, pytest config
 │   ├── data/seed.json.gz              bundled snapshot loaded on first boot
 │   ├── scripts/                       ingest.py (CLI), build_seed.py

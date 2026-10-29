@@ -37,8 +37,18 @@ async def create_pool(
     )
 
 
+SCHEMA_LOCK_ID = 7_243_000  # arbitrary key for the Postgres advisory lock
+
+
 async def init_schema(pool: asyncpg.Pool) -> None:
-    await pool.execute(SCHEMA_PATH.read_text())
+    """Create the tables. Workers start together, and concurrent CREATE TABLE IF NOT EXISTS can
+    still collide in Postgres' catalog, so one worker at a time holds an advisory lock."""
+    async with pool.acquire() as conn:
+        await conn.execute("SELECT pg_advisory_lock($1)", SCHEMA_LOCK_ID)
+        try:
+            await conn.execute(SCHEMA_PATH.read_text())
+        finally:
+            await conn.execute("SELECT pg_advisory_unlock($1)", SCHEMA_LOCK_ID)
 
 
 async def get_db(request: Request) -> asyncpg.Pool:

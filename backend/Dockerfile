@@ -24,4 +24,4 @@ USER appuser
 
 EXPOSE 8000
 # Behind Heroku's router the client IP is in X-Forwarded-For; trust it so rate limits are per user.
-CMD ["sh", "-c", "gunicorn app.main:app -k uvicorn.workers.UvicornWorker -w 2 -b 0.0.0.0:${PORT:-8000} --forwarded-allow-ips='*'"]
+CMD ["sh", "-c", "gunicorn app.main:app -k uvicorn.workers.UvicornWorker -w ${WEB_CONCURRENCY:-2} -b 0.0.0.0:${PORT:-8000} --forwarded-allow-ips='*'"]

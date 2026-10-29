@@ -1,0 +1,15 @@
+{
+  "name": "wind-forecast-monitor-api",
+  "description": "FastAPI backend for the Wind Forecast Monitor. Postgres holds the data; Redis is a cache.",
+  "stack": "container",
+  "addons": [
+    { "plan": "heroku-postgresql:essential-0" },
+    { "plan": "heroku-redis:mini" }
+  ],
+  "env": {
+    "ADMIN_TOKEN": { "description": "Protects POST /api/v1/admin/ingest", "generator": "secret" },
+    "CORS_ORIGINS": { "description": "Comma-separated web origins allowed to call the API", "value": "http://localhost:5173" },
+    "WEB_CONCURRENCY": { "description": "Gunicorn workers (each opens up to 5 Postgres connections)", "value": "2" }
+  },
+  "formation": { "web": { "quantity": 1, "size": "eco" } }
+}

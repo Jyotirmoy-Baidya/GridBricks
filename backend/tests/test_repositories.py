@@ -55,3 +55,14 @@ async def test_coverage_is_computed_from_the_data(db):
     c = await meta_repo.get_coverage(db)
     assert (c["actual_rows"], c["forecast_rows"], c["actual_min"], c["actual_max"]) == ("2", "1", str(T), str(T + H))
     assert c["ingested_at"].endswith("Z")
+
+
+async def test_schema_setup_is_safe_to_run_concurrently(db):
+    import asyncio
+
+    from app.core.db import init_schema
+
+    await db.execute("DROP TABLE actual_generation, wind_forecast, ingest_meta")
+    await asyncio.gather(*(init_schema(db) for _ in range(4)))
+    tables = await db.fetch("SELECT tablename FROM pg_tables WHERE schemaname = current_schema()")
+    assert {r["tablename"] for r in tables} == {"actual_generation", "wind_forecast", "ingest_meta"}
