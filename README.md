@@ -13,8 +13,8 @@ A web app for a GB energy utility's day-ahead trading desk. It shows the latest 
 |---|---|
 | **Overview** | Headline error numbers, actual vs forecast for the last 7 days, how error grows with lead time, and a findings card computed from the data on screen. |
 | **Forecasts** | For any date range, the forecast that was available N hours before each hour next to actual output (chart or table). |
-| **Accuracy** | Summary metrics, error by horizon (0 to 48 h), by hour of day, and the error distribution with the ten worst misses. |
-| **Day-ahead** | For a delivery day: the last forecast published before the D-1 cut-off (07:00, 09:00 or 11:00 London), an hourly P10 to P90 range, and a conservative "wind you can count on" line. Shows actual output afterwards. |
+| **Accuracy** | Summary metrics, error by horizon (0 to 48 h), by hour of day, the error distribution with the ten worst misses, and **Reliability**: an out-of-sample test of the P10 to P90 range, the count-on line and a bias adjustment. |
+| **Day-ahead** | For a delivery day: the last forecast published before the D-1 cut-off (07:00, 09:00 or 11:00 London), an hourly P10 to P90 range, a bias-adjusted forecast, and a conservative "wind you can count on" line. A **demand what-if** turns that into power still to buy, and the hourly table downloads as CSV. Shows actual output afterwards. |
 | **Live** | Tomorrow's hourly forecast from the newest Elexon publish, fetched on demand and not stored. |
 | **Methodology** | The selection rule, the metrics and the assumptions in plain language. |
 
@@ -22,8 +22,12 @@ A web app for a GB energy utility's day-ahead trading desk. It shows the latest 
 
 ![Day-ahead planner](screenshots/day-ahead.jpg)
 
+![Reliability: does the correction hold out of sample?](screenshots/reliability.jpg)
+
 <details>
 <summary>More screenshots</summary>
+
+![Day-ahead planner in dark mode](screenshots/day-ahead-dark.jpg)
 
 ![Accuracy by horizon](screenshots/accuracy-by-horizon.jpg)
 
@@ -72,8 +76,8 @@ cd ../frontend && npm install && npm run dev                                  # 
 ### Tests
 
 ```bash
-cd backend && python -m pytest -q     # 40 tests; needs the postgres container (docker compose up -d postgres)
-cd frontend && npx vitest run         # 14 tests
+cd backend && python -m pytest -q     # 45 tests; needs the postgres container (docker compose up -d postgres)
+cd frontend && npx vitest run         # 20 tests
 ```
 
 Backend tests run against a real Postgres, each in its own temporary schema, with `fakeredis` for the cache. Where possible the tests use small synthetic data with known answers (for example, one forecast that is always +200 MW off, so the expected MAE at each horizon is exactly known).
@@ -128,7 +132,7 @@ Browser ── React SPA ── /api/v1 ── FastAPI ──┬── PostgreSQ
 
 ### API (all under `/api/v1`)
 
-`GET /health` · `GET /meta/coverage` · `GET /generation/{actuals,forecasts,comparison}` · `GET /metrics/{summary,by-horizon,by-hour,distribution}` · `GET /day-ahead/{date}?cutoff=09:00` · `GET /live/day-ahead` · `POST /admin/ingest` (needs `X-Admin-Token`).
+`GET /health` · `GET /meta/coverage` · `GET /generation/{actuals,forecasts,comparison}` · `GET /metrics/{summary,by-horizon,by-hour,distribution,calibration}` · `GET /day-ahead/{date}?cutoff=09:00` · `GET /live/day-ahead` · `POST /admin/ingest` (needs `X-Admin-Token`).
 
 Time ranges are ISO-8601 UTC, end exclusive, capped at 45 days. Bad input returns a 422; exceeding the rate limit returns a 429 with `Retry-After`.
 
@@ -139,11 +143,14 @@ Time ranges are ISO-8601 UTC, end exclusive, capped at 45 days. Bad input return
 - The latest month is worse than January (MAE about 2.8 GW at 4 h).
 - **Data quality:** a few FUELHH half-hours are exactly 0 MW (4 of about 14,500), each isolated mid-day among smooth neighbours; the lowest genuine reading is about 400 MW. They are treated as missing values and dropped at ingest (and purged from earlier loads). Left in, one of them was the single largest "forecast miss".
 
+- **Out of sample, the range is optimistic.** Tested on the latest month with a 30-day learning window, the "80%" P10 to P90 range held the actual about 70% of the time, and the count-on line (meant to be reached 90% of the time) about 79%. Learning from all history instead gave only about 60%, because the forecast's steady offset drifts through the year (about +1.4 GW over the training months, +2.7 GW in the latest month). Removing the learned offset still cut MAE by about 28%.
+
 ## Assumptions and limits
 
 - The brief asks for decisions made in January 2026. The loaded history is wider so the date pickers and Live page are useful; January sits inside it and any January range can be selected.
-- The P10 to P90 range and the count-on line use errors measured on the same loaded data, so they are an in-sample guide, not a tested prediction interval.
-- No dark mode yet.
+- The P10 to P90 range, count-on line and bias adjustment are learned from forecast errors in the 30 days before the day shown, so they have not seen it. They are not guarantees: see **Accuracy > Reliability** for how often they held. Only when there is under a week of earlier data (the first days of the history) are they learned from all loaded data, and the page says so.
+- The demand what-if uses a flat demand you type in, because demand is not part of the Elexon data this app is limited to.
+- The date presets are **Latest month** and **Jan 2026**, the study window the brief asks for. A light/dark toggle is in the top bar.
 
 ## AI tools
 

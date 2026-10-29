@@ -24,7 +24,7 @@ jobs:
         with: { python-version: "3.12" }
       - run: pip install -e ".[dev]"
       - run: ruff check .
-      - run: mypy app
+      - run: mypy app scripts
       - run: pytest -q
 
   frontend:
@@ -36,4 +36,24 @@ jobs:
         with: { node-version: "22" }
       - run: npm ci
       - run: npm run lint
+      - run: npx vitest run
       - run: npm run build
+
+  # Builds both Docker images and starts the whole stack, as a reviewer would with ./startup.sh.
+  stack:
+    runs-on: ubuntu-latest
+    needs: [backend, frontend]
+    steps:
+      - uses: actions/checkout@v4
+      - name: Start the stack
+        run: ./startup.sh
+      - name: Smoke test
+        run: |
+          set -e
+          curl -fsS localhost:5173/api/v1/health | grep -q '"status":"ok"'
+          curl -fsS "localhost:5173/api/v1/meta/coverage" | grep -q '"loaded":true'
+          curl -fsS "localhost:5173/api/v1/metrics/summary?start=2026-01-01T00:00:00Z&end=2026-02-01T00:00:00Z&horizon_h=4" | grep -q '"coverage":1.0'
+          curl -fsS -o /dev/null localhost:5173/dashboard/accuracy/reliability
+      - name: Logs on failure
+        if: failure()
+        run: docker compose logs --tail 80
