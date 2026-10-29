@@ -1,13 +1,9 @@
-export const DEFAULT_START = '2026-01-01'
-export const DEFAULT_END = '2026-01-31'
+// Used until the API reports what data is loaded (and if it cannot be reached).
+export const FALLBACK_BOUNDS = { min: '2025-12-30', max: '2026-01-31' }
+
+export const DEFAULT_SPAN_DAYS = 31
 export const DEFAULT_HORIZON = 4
 export const DEFAULT_CUTOFF = '09:00'
-export const DEFAULT_DELIVERY = '2026-02-01' // latest delivery day: the last January decision (31 Jan) is for 1 Feb
-
-export const RANGE_MIN = '2026-01-01'
-export const RANGE_MAX = '2026-01-31'
-export const DELIVERY_MIN = '2026-01-02'
-export const DELIVERY_MAX = '2026-02-01'
 
 export const MAX_RANGE_DAYS = 45
 export const MAX_HORIZON = 48

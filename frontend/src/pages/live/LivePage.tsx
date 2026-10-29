@@ -30,7 +30,7 @@ function LiveKpis({ d }: { d: LiveResponse }) {
           note={d.as_of ? `Published ${formatLondon(d.as_of, 'ddd D MMM')}${ageH != null ? ` · ${ageH.toFixed(1)} h ago` : ''}` : 'No forecast published yet'}
         />
         <KpiTile label="Forecast wind energy" value={gwh(d.forecast_gwh)} unit="GWh" tone="forecast" note={`${have} of ${d.hours.length} hours forecast`} />
-        <KpiTile label="Wind you can count on" value={gwh(d.count_on_gwh)} unit="GWh" tone="dark" note="Forecast less January's P90 over-forecast" />
+        <KpiTile label="Wind you can count on" value={gwh(d.count_on_gwh)} unit="GWh" tone="dark" note="Forecast less the P90 over-forecast" />
       </KpiRow>
       {have < d.hours.length && (
         <div role="status" className="rounded-md border border-amber-300 bg-fc-soft px-4 py-3 text-sm text-amber-900">
@@ -54,7 +54,7 @@ export default function LivePage() {
   return (
     <>
       <div role="note" className="rounded-md border border-wind/30 bg-wind-soft px-4 py-3 text-sm text-slate-800">
-        <strong>Live view, outside the January 2026 study.</strong> This pulls the newest wind forecast straight from Elexon for tomorrow. It is not stored and is not part of the accuracy figures on the other pages.
+        <strong>Live view.</strong> This pulls the newest wind forecast straight from Elexon for tomorrow. It is not stored, and tomorrow's actual output is not known yet, so it is not part of the accuracy figures on the other pages.
       </div>
 
       <div className="flex flex-wrap items-center gap-3 text-sm text-slate-600">
@@ -71,7 +71,7 @@ export default function LivePage() {
       <Card
         title="Tomorrow, hour by hour"
         actions={<ChartLegend items={[{ label: 'P10–P90 range', color: COLORS.forecast, kind: 'band' }, { label: 'Forecast', color: COLORS.forecast }, { label: 'Count-on', color: COLORS.ink, kind: 'dashed' }]} />}
-        footer="Each hour uses the newest forecast published so far. The range and count-on line come from how wrong forecasts at the same horizon were in January."
+        footer="Each hour uses the newest forecast published so far. The range and count-on line come from how wrong forecasts at the same horizon were in the loaded history."
       >
         <ResourceView res={store} skeleton={<ChartSkeleton height={340} />} onRetry={() => void load(undefined, true)}>
           {(d) => <BandChart hours={d.hours} height={340} />}

@@ -13,7 +13,6 @@ import TableSkeleton from '@/components/skeletons/TableSkeleton'
 import { useDayAheadStore } from '@/store/useDayAheadStore'
 import { useFilterStore } from '@/store/useFilterStore'
 import type { DayAheadResponse } from '@/types/api'
-import { DEFAULT_DELIVERY, DELIVERY_MAX, DELIVERY_MIN } from '@/utils/constants'
 import { addDays, formatLondon } from '@/utils/format'
 import { COLORS } from '@/utils/theme'
 
@@ -29,7 +28,7 @@ function DayKpis({ d }: { d: DayAheadResponse }) {
       <KpiRow>
         <KpiTile label="Latest forecast available" value={latestPublish ? formatLondon(latestPublish, 'HH:mm') : '–'} note={latestPublish ? `Published ${formatLondon(latestPublish, 'ddd D MMM')} · cut-off ${formatLondon(d.cutoff, 'HH:mm')}` : `Nothing published before the ${formatLondon(d.cutoff, 'HH:mm')} cut-off`} />
         <KpiTile label="Forecast wind energy" value={gwh(d.forecast_gwh)} unit="GWh" tone="forecast" note="Sum of 24 hourly forecasts" />
-        <KpiTile label="Wind you can count on" value={gwh(d.count_on_gwh)} unit="GWh" tone="dark" note="Forecast less January's P90 over-forecast" />
+        <KpiTile label="Wind you can count on" value={gwh(d.count_on_gwh)} unit="GWh" tone="dark" note="Forecast less the P90 over-forecast" />
         <KpiTile label="Actual (after the fact)" value={gwh(d.actual_gwh)} unit="GWh" tone="actual" note={d.actual_gwh == null ? 'Not all hours reported' : 'Hourly outturn from FUELHH'} />
       </KpiRow>
       {missing > 0 && (
@@ -46,24 +45,28 @@ export default function DayAheadPage() {
   const { search } = useLocation()
   const navigate = useNavigate()
   const cutoff = useFilterStore((s) => s.cutoff)
-  const date = param && DATE_RE.test(param) ? param : DEFAULT_DELIVERY
+  const bounds = useFilterStore((s) => s.bounds)
+  const deliveryMin = addDays(bounds.min, 1) // a decision needs a forecast from the day before
+  const deliveryMax = bounds.max
+  const inRange = (d: string) => d >= deliveryMin && d <= deliveryMax
+  const date = param && DATE_RE.test(param) && inRange(param) ? param : deliveryMax
   const store = useDayAheadStore()
   const load = store.load
 
   useEffect(() => void load({ date, cutoff }), [load, date, cutoff])
 
   const go = (d: string) => {
-    if (d >= DELIVERY_MIN && d <= DELIVERY_MAX) void navigate({ pathname: `/dashboard/day-ahead/${d}`, search })
+    if (inRange(d)) void navigate({ pathname: `/dashboard/day-ahead/${d}`, search })
   }
 
   return (
     <>
       <div className="flex flex-wrap items-center gap-3">
         <div className="flex items-center overflow-hidden rounded-md border border-slate-300 bg-white">
-          <button type="button" aria-label="Previous delivery day" disabled={date <= DELIVERY_MIN} onClick={() => go(addDays(date, -1))} className="min-h-10 w-10 hover:bg-slate-50 disabled:opacity-40">‹</button>
+          <button type="button" aria-label="Previous delivery day" disabled={date <= deliveryMin} onClick={() => go(addDays(date, -1))} className="min-h-10 w-10 hover:bg-slate-50 disabled:opacity-40">‹</button>
           <label htmlFor="delivery" className="border-x border-slate-300 px-3 text-sm text-slate-600">Delivery day</label>
-          <input id="delivery" type="date" min={DELIVERY_MIN} max={DELIVERY_MAX} value={date} onChange={(e) => e.target.value && go(e.target.value)} className="min-h-10 px-2 text-sm" />
-          <button type="button" aria-label="Next delivery day" disabled={date >= DELIVERY_MAX} onClick={() => go(addDays(date, 1))} className="min-h-10 w-10 border-l border-slate-300 hover:bg-slate-50 disabled:opacity-40">›</button>
+          <input id="delivery" type="date" min={deliveryMin} max={deliveryMax} value={date} onChange={(e) => e.target.value && go(e.target.value)} className="min-h-10 px-2 text-sm" />
+          <button type="button" aria-label="Next delivery day" disabled={date >= deliveryMax} onClick={() => go(addDays(date, 1))} className="min-h-10 w-10 border-l border-slate-300 hover:bg-slate-50 disabled:opacity-40">›</button>
         </div>
         <p className="m-0 text-sm text-slate-600">The desk buys on the day before, using the last forecast published before the cut-off.</p>
       </div>

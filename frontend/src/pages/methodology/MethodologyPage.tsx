@@ -36,7 +36,7 @@ export default function MethodologyPage() {
       <Card title="Scope and assumptions">
         <ul className="m-0 flex max-w-[72ch] list-disc flex-col gap-1.5 pl-5 leading-relaxed">
           <li>National-level GB wind only, from Elexon BMRS. No demand, price or other fuel data.</li>
-          <li>Decisions made in January 2026, so delivery days run from 2 January to 1 February.</li>
+          <li>The loaded history runs from 30 December 2025 to the latest full day, and the date pickers allow any day in it. The January 2026 study window the brief asks for sits inside that range; the pages open on the most recent month.</li>
           <li>All times are stored in UTC and shown in Europe/London.</li>
           <li>WINDFOR may cover wind that FUELHH does not meter, which would explain a persistent positive bias. This has not been confirmed with Elexon.</li>
         </ul>

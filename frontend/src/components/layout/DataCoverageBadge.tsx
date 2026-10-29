@@ -1,12 +1,8 @@
-import { useEffect } from 'react'
 import { useCoverageStore } from '@/store/useGenerationStore'
 import { formatLondon } from '@/utils/format'
 
 export default function DataCoverageBadge({ compact }: { compact?: boolean }) {
-  const { data, status, load } = useCoverageStore()
-  useEffect(() => {
-    void load(undefined)
-  }, [load])
+  const { data, status } = useCoverageStore()
 
   const ok = data?.loaded
   const dot = status === 'error' ? 'bg-red-400' : ok ? 'bg-emerald-400' : 'bg-amber-400'
